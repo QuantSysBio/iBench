@@ -9,6 +9,7 @@ setup(
     author_email='john.cormican@mpinat.mpg.de',
     packages=[
         'ibench',
+        'ibench.input',
     ],
     long_description=open('README.md').read(),
     py_modules=[
