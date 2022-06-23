@@ -1,0 +1,68 @@
+---
+identifier: Example
+searchResults: 
+  - searchEngine: peaks
+    resultsLocation: example/data/peaks/SPL_FUSION_2_2_PEAKS_6/DB search psm.csv
+    scoreLimit: 0
+    identificationGroup: 2
+  - searchEngine: peaks
+    resultsLocation: example/data/peaks/SPL_FUSION_3_2_PEAKS_7/DB search psm.csv
+    scoreLimit: 0
+    identificationGroup: 3
+  - searchEngine: peaks
+    resultsLocation: example/data/peaks/SPL_FUSION_4_2_PEAKS_3/DB search psm.csv
+    scoreLimit: 0
+    identificationGroup: 4
+  - searchEngine: peaks
+    resultsLocation: example/data/peaks/SPL_FUSION_5_2_PEAKS_3/DB search psm.csv
+    scoreLimit: 0
+    identificationGroup: 5
+  - searchEngine: percolator
+    resultsLocation: example/data/maxquant/SPL_2_2/perc_out.psms
+    scoreLimit: 0
+    qValueLimit: 0.01
+    identificationGroup: 2
+  - searchEngine: percolator
+    resultsLocation: example/data/maxquant/SPL_3_2/perc_out.psms
+    scoreLimit: 0
+    qValueLimit: 0.01
+    identificationGroup: 3
+  - searchEngine: percolator
+    resultsLocation: example/data/maxquant/SPL_4_2/perc_out.psms
+    scoreLimit: 0
+    qValueLimit: 0.01
+    identificationGroup: 4
+  - searchEngine: percolator
+    resultsLocation: example/data/maxquant/SPL_5_2/perc_out.psms
+    scoreLimit: 0
+    qValueLimit: 0.01
+    identificationGroup: 5
+
+scanFolder: example/data/scans
+scanFormat: mgf
+
+outputFolder: example/output
+
+canonicalFraction: 0.7
+trappingFraction: 0.3
+maxSequenceLength: 15
+minSequenceLength: 9
+
+proteome: example/data/example_proteome.fasta
+
+benchmarkResults:
+  - name: fullSet
+    searchEngine: percolator
+    resultsLocation: example/identifications/perc_out.psms
+    decoyLocation: example/identifications/perc_decoys.psms
+    colour: DeepPink
+  - name: noDelta
+    searchEngine: percolator
+    resultsLocation: example/identifications/perc_out_no_delta.psms
+    decoyLocation: example/identifications/perc_decoys_no_delta.psms
+    colour: LightSlateGrey
+  - name: noMassFeat
+    searchEngine: percolator
+    resultsLocation: example/identifications/perc_out_no_mass_feat.psms
+    decoyLocation: example/identifications/perc_decoys_no_mass_feat.psms
+    colour: DodgerBlue
