@@ -21,6 +21,18 @@ In the example used in this data we have
 
 You will also require conda to use the iBench software.
 
+You can then clone the repo with:
+
+```
+git clone https://github.com/QuantSysBio/iBench.git
+```
+
+and navigate in your terminal to the iBench folder with:
+
+```
+cd iBench
+```
+
 ### Setting up your environment:
 
 
