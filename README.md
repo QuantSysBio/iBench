@@ -132,6 +132,7 @@ The following config settings can be used
 | trappingFraction | The fraction of the ground truth identifications which should be trapping sequences in the artificial reference (not discoverable as canonical or cisspliced).   |
 | ms2Accuracy  | The m/z accuracy on the measurement of the MS2 spectrum (needed for calculating coverage and signal to noise features). |
 | enzyme       | The enzyme used to produce the peptides, options are unspecific or trypsin. |
+| proteome    | The location of a proteome fasta file which will be modified to produce the artificial reference database. |
 
 ### Optional for createDB Execution
 
@@ -139,7 +140,44 @@ The following config settings can be used for specific user requirements in the 
 
 | Key         | Description                                       |
 |-------------|---------------------------------------------------|
-| scanFolder  | A folder containing all of the MS files.          |
+| closenessCutOff  | The minimum number of residues difference between the shorter of any pair of peptides and their longest shared subsequence (default is 1 if no cisspliced peptides are required and 3 if cisspliced peptides are being used.          |
 | randomSeed  | The random seed to use to ensure reproducibility of iBench execution (default=42). |
 | maxSequenceLength | Define the maximum sequence length of peptides to be used in the ground truth identifications. |
 | minSequenceLength | Define the minimum sequence length of peptides to be used in the ground truth identifications. |
+
+### Required for analysis Execution
+
+The following config settings can be used
+
+| Key         | Description                                       |
+|-------------|---------------------------------------------------|
+| scanFolder  | A folder containing all of the MS files.          |
+| scanFormat  | The format of the MS files (either mgf or mzML).  |
+| benchmarkResults | A list of all of the search results to benchmark. The search results should be a list of outputs from PEAKS, MaxQuant, Mascot, or Percolator, see more details below. |
+
+
+### Specifying Search Results
+
+When providing search results, iBench requires more information than a location. To see how this should be formated in yaml see the example/config.yml file.
+
+For ground truth identifications you will require:
+
+| Key         | Description                                       |
+|-------------|---------------------------------------------------|
+| searchEngine | mascot, peaks, percolator, or maxquant           |
+| resultsLocation | The location of the results file.             |
+| scoreLimit | The score above which we should consider PSMs for ground truth identifications. |
+| qValueLimit  | Only for mascot or percolator. The q-value below which we should consider PSMs for ground truth identifications. |
+| identificationGroup | If you are using multiple search engines for the original search and only wish to use PSMs identified by both, assign them to the same identificationGroup. Otherwise ensure that all results belong to separate identification groups. |
+
+For benchmarking results you will require:
+
+| Key          | Description                                       |
+|--------------|---------------------------------------------------|
+| name         | The name of your identification method.
+| searchEngine | mascot, peaks, percolator, or maxquant.          |
+| resultsLocation | The location of the results file.             |
+| decoyLocation | (optional) The location of your decoy PSMs if using Percolator or Mascot. |
+| colour  | The colour you want to identify the method with in the iBench output plots. Can be any CSS colour. |
+
+
