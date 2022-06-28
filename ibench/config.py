@@ -11,7 +11,6 @@ ALL_CONFIG_KEYS = (
     'scanFolder',
     'scanFormat',
     'searchResults',
-    'scanFile',
     'maxSequenceLength',
     'minSequenceLength',
     'outputFolder',
@@ -57,7 +56,6 @@ class Config:
         """
         self.identifier = config_dict['identifier']
         self.search_results = config_dict.get('searchResults')
-        self.scan_file = config_dict.get('scanFile')
         self.output_folder = config_dict.get('outputFolder')
         self.random_seed = config_dict.get('randomSeed', 42)
         self.q_cuts = config_dict.get('qValueCutOffs')

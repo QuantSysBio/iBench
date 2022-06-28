@@ -88,5 +88,7 @@ CONFOUNDING_FEATURE_NAMES = [
     'Peptide Length',
     'Charge',
     'Peptide Mass',
-    'Hydrophobicity Index'
+    'Hydrophobicity Index',
+    'MS2 Coverage',
+    'Signal To Noise'
 ]

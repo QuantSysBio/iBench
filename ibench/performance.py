@@ -574,42 +574,58 @@ def plot_confounding(qt_df, config):
     all_figs = {}
     for results in config.benchmark_results:
         fig = make_subplots(
-            rows=len(strata)*2,
+            rows=len(strata)*3,
             cols=2,
-            row_titles=strata*2,
+            row_titles=strata*3,
         )
         for idx, stratum in enumerate(strata):
             pep_mass_traces = plot_cts(qt_df, results, stratum, 'peptideMass')
             hydrophobicity_traces = plot_cts(qt_df, results, stratum, 'hydrophobicity')
             pep_length_traces = plot_discrete(qt_df, results, stratum, 'peptideLength')
             charge_traces = plot_discrete(qt_df, results, stratum, 'charge')
+            coverage_traces = plot_cts(qt_df, results, stratum, 'ms2Coverage')
+            sig2no_traces = plot_cts(qt_df, results, stratum, 'signalToNoise')
             for trace in pep_length_traces:
                 if idx > 0:
                     trace.update(showlegend=False)
                 fig.add_trace(
                     trace,
-                    row=1+(idx*2),
+                    row=1+(idx*3),
                     col=1,
                 )
             for trace in charge_traces:
                 trace.update(showlegend=False)
                 fig.add_trace(
                     trace,
-                    row=1+(idx*2),
+                    row=1+(idx*3),
                     col=2,
                 )
             for trace in pep_mass_traces:
                 trace.update(showlegend=False)
                 fig.add_trace(
                     trace,
-                    row=2+(idx*2),
+                    row=2+(idx*3),
                     col=1,
                 )
             for trace in hydrophobicity_traces:
                 trace.update(showlegend=False)
                 fig.add_trace(
                     trace,
-                    row=2+(idx*2),
+                    row=2+(idx*3),
+                    col=2,
+                )
+            for trace in coverage_traces:
+                trace.update(showlegend=False)
+                fig.add_trace(
+                    trace,
+                    row=3+(idx*3),
+                    col=1,
+                )
+            for trace in sig2no_traces:
+                trace.update(showlegend=False)
+                fig.add_trace(
+                    trace,
+                    row=3+(idx*3),
                     col=2,
                 )
         fig.update_layout(
