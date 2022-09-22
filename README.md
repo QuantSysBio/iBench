@@ -144,6 +144,7 @@ The following config settings can be used for specific user requirements in the 
 | randomSeed  | The random seed to use to ensure reproducibility of iBench execution (default=42). |
 | maxSequenceLength | Define the maximum sequence length of peptides to be used in the ground truth identifications. |
 | minSequenceLength | Define the minimum sequence length of peptides to be used in the ground truth identifications. |
+| filterPTMs | Whether to filter modified peptides from the ground truth identificaitons, by default this will be True to ensure maximum confidence in the ground truth dataset, however it can be set to False if the user wishes to investigate PTMs. |
 
 ### Required for analysis Execution
 
