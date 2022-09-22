@@ -16,7 +16,7 @@ from ibench.check_presence import (
     check_cis_present,
     generate_pairs,
 )
-from ibench.constants import AMINO_ACIDS, CANONICAL_KEY, CISSPLICED_KEY, TRAPPING_KEY
+from ibench.constants import AMINO_ACIDS, CANONICAL_KEY, CISSPLICED_KEY, TRANSPLICED_KEY
 from ibench.utils import get_pepitde_strata
 from ibench.validate_assignments import validate_proteome
 
@@ -31,7 +31,7 @@ def remove_matches(proteome, peptide_strata, ids_of_interest=None):
     proteome : list of str
         A list of unmodified strata.
     peptide_strata : dict
-        A dictionary detailing all canonical, cisspliced, and trapping peptides.
+        A dictionary detailing all canonical, cisspliced, and transspliced peptides.
     ids_of_interest : list of int or None
         A list of all the indices to check, if None all indices are considered.
 
@@ -172,8 +172,8 @@ def check_sequences(
             if run_idx > 5:
                 print('cis not found', df_row['peptide'])
 
-    trapping_df = peptide_df[peptide_df['stratum'] == TRAPPING_KEY]
-    for _, df_row in trapping_df.iterrows():
+    trans_df = peptide_df[peptide_df['stratum'] == TRANSPLICED_KEY]
+    for _, df_row in trans_df.iterrows():
         for other_idx in modified_ids:
             # Check existence as discoverable
             if df_row['peptide'] in modified_proteome[other_idx]:
@@ -184,7 +184,7 @@ def check_sequences(
                     )
                 )
                 newly_modified_ids.append(other_idx)
-                print('Trapping Peptide Present as Canonical:', df_row['peptide'])
+                print('Transspliced Peptide Present as Canonical:', df_row['peptide'])
 
             # Check existence as cisspliced
             if cis_spliced_df.shape[0]:
@@ -197,7 +197,7 @@ def check_sequences(
                             modified_proteome[other_idx], replace_string
                         )
                     if run_idx > 5:
-                        print('Trapping Peptide Present as Spliced:', df_row['peptide'])
+                        print('Transspliced Peptide Present as Spliced:', df_row['peptide'])
 
     return peptide_df, modified_proteome, newly_modified_ids
 

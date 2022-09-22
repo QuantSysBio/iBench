@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='ibench',
-    version=0.1,
+    version=0.2,
     description='Benchmarking for mass spectrometry identifications.',
     author='John Cormican',
     author_email='john.cormican@mpinat.mpg.de',
@@ -22,12 +22,11 @@ setup(
         ]
     },
     install_requires=[
-        'biopython==1.79',
+        'biopython',
         'certifi==2021.10.8',
         'numpy==1.22.3',
         'pandas==1.4.2',
         'plotly==5.8.0',
-        'pyopenms==2.7.0',
         'pyteomics==4.5.3',
         'python-dateutil==2.8.2',
         'pytz==2022.1',

@@ -10,7 +10,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from ibench.constants import CONFOUNDING_FEATURE_NAMES, RESIDUE_WEIGHTS, TRAPPING_KEY
+from ibench.constants import CONFOUNDING_FEATURE_NAMES, RESIDUE_WEIGHTS, TRANSPLICED_KEY
 from ibench.html_report import create_html_report
 
 def _generate_cut_offs(query_table, score_key, n_steps):
@@ -124,7 +124,8 @@ def plot_precision_recall(qt_df, config):
     config : ibench.config.Config
         The Config object used to run the experiment.
     """
-    strata = [x for x in qt_df['trueStratum'].unique() if x != TRAPPING_KEY]
+    strata = [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
+
     pr_curves = {}
     min_pr = 1.0
     for stratum in strata:
@@ -198,7 +199,9 @@ def create_fdr_curve(qt_df, results, stratum):
     """
     fdrs = []
     name = results['name']
-    for fdr_cut in [0.005*i for i in range(1, 11)]:
+    goal_fdrs = [0.5*i for i in range(1, 11)]
+    found_fdrs = []
+    for gofdr, fdr_cut in zip(goal_fdrs, [0.005*i for i in range(1, 11)]):
         filtered_df = qt_df[
             (qt_df[f'{name}qValue'] < fdr_cut) &
             (qt_df[f'{name}Stratum'] == stratum)
@@ -208,9 +211,11 @@ def create_fdr_curve(qt_df, results, stratum):
             lambda x : x['truePeptide'].replace('I', 'L') == x[f'{name}Peptide'].replace('I', 'L'),
             axis=1
         )].shape[0]
-        fdrs.append(100*(1-(correct_count/n_found)))
+        if n_found > 0:
+            fdrs.append(100*(1-(correct_count/n_found)))
+            found_fdrs.append(gofdr)
     return go.Scatter(
-        x=[0.5*i for i in range(1, 11)],
+        x=found_fdrs,
         y=fdrs,
         name=f'{name} FDR',
         line={'color': results['colour']}
@@ -219,14 +224,14 @@ def create_fdr_curve(qt_df, results, stratum):
 def plot_fdr_estimation(qt_df, config):
     """ Function to plot the accuracy of
     """
-    strata = [x for x in qt_df['trueStratum'].unique() if x != TRAPPING_KEY]
+    strata = [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
     fdr_curves = {}
 
     for stratum in strata:
         fdr_curves[stratum] = [go.Scatter(
             x=[i*0.5 for i in range(11)],
             y=[i*0.5 for i in range(11)],
-            name='Random Predictor',
+            name='Perfect FDR Estimation',
             line={'color': 'black', 'dash': 'dash'}
         )]
         for results in config.benchmark_results:
@@ -379,7 +384,7 @@ def plot_overall_distro(qt_df, config):
     config : ibench.config.Config
         The Config object used to run the experiment.
     """
-    strata = [x for x in qt_df['trueStratum'].unique() if x != TRAPPING_KEY]
+    strata = [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
 
     fig = make_subplots(
         rows=1,
@@ -560,7 +565,7 @@ def plot_confounding(qt_df, config):
     config : ibench.config.Config
         The Config object used to run the experiment.
     """
-    strata = [x for x in qt_df['trueStratum'].unique() if x != TRAPPING_KEY]
+    strata = [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
     repeated_strata = []
     for stratum in strata:
         repeated_strata.extend([stratum, stratum])
@@ -700,7 +705,7 @@ def _get_counts(all_df, score_cut_off, name, acc_grp, with_true_negatives=False)
                 (all_df[f'{name}Score'] < score_cut_off) |
                 (all_df[f'{name}Score'].isna())
             )
-            & (all_df['trueStratum'] == TRAPPING_KEY)
+            & (all_df['trueStratum'] == TRANSPLICED_KEY)
         ]
         return pred_count, correct_count, tn_df.shape[0]
 
@@ -716,7 +721,7 @@ def plot_roc(qt_df, config):
     config : ibench.config.Config
         The Config object used to run the experiment.
     """
-    strata = [x for x in qt_df['trueStratum'].unique() if x != TRAPPING_KEY]
+    strata = [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
     roc_curves = {}
     max_tpr = 0.0
     for stratum in strata:

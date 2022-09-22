@@ -7,6 +7,7 @@ import yaml
 ALL_CONFIG_KEYS = (
     'benchmarkResults',
     'closenessCutOff',
+    'filterPTMs',
     'identifier',
     'scanFolder',
     'scanFormat',
@@ -19,7 +20,7 @@ ALL_CONFIG_KEYS = (
     'qValueCutOffs',
     'canonicalFraction',
     'cissplicedFraction',
-    'trappingFraction',
+    'transsplicedFraction',
     'proteome',
     'ms2Accuracy',
     'enzyme',
@@ -41,7 +42,7 @@ class Config:
             f'iBench Config for Experiment : {self.identifier}' +
             f'Percentage Canonical : {round(self.discoverable_fraction*100)}' +
             f'Percentage Cisspliced : {round(self.cisspliced_fraction*100)}' +
-            f'Percentage Trapping : {round(self.trapping_fraction*100)}'
+            f'Percentage Transspliced : {round(self.transpliced_fraction*100)}'
         )
         return out_str
 
@@ -61,7 +62,8 @@ class Config:
         self.q_cuts = config_dict.get('qValueCutOffs')
         self.discoverable_fraction = config_dict['canonicalFraction']
         self.cisspliced_fraction = config_dict.get('cissplicedFraction', 0.0)
-        self.trapping_fraction = config_dict['trappingFraction']
+        self.filter_ptms = config_dict.get('filterPTMs', True)
+        self.transspliced_fraction = config_dict['transsplicedFraction']
         self.input_database = config_dict.get('inputDatabase')
         self.proteome_loc = config_dict['proteome']
         self.min_seq_len = config_dict.get('minSequenceLength', 7)

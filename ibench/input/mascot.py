@@ -197,13 +197,15 @@ def _read_mascot_dfs(
         q_value_limit,
         score_limit,
         hq_hits_only,
+        filter_ptms,
     ):
     hits_df = pd.read_csv(
         csv_filename,
         skiprows=lambda idx : _skip_logic(idx, hits_line, queries_line),
         usecols=REQUIRED_MASCOT_COLUMNS
     )
-    hits_df = hits_df[hits_df[MASCOT_PTM_SEQ_KEY].isna()]
+    if filter_ptms:
+        hits_df = hits_df[hits_df[MASCOT_PTM_SEQ_KEY].isna()]
 
     # Rename to match Caravan naming scheme.
     hits_df = hits_df.rename(
@@ -244,7 +246,7 @@ def _read_mascot_dfs(
 
     return hits_df
 
-def read_single_mascot_data(input_filename, q_value_limit, score_limit, hq_hits_only):
+def read_single_mascot_data(input_filename, q_value_limit, score_limit, hq_hits_only, filter_ptms):
     """ Function to read in mascot search results from a single file.
 
     Parameters
@@ -275,6 +277,7 @@ def read_single_mascot_data(input_filename, q_value_limit, score_limit, hq_hits_
         q_value_limit,
         score_limit,
         hq_hits_only,
+        filter_ptms,
     )
 
     hits_df = hits_df[[

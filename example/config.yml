@@ -44,7 +44,7 @@ scanFormat: mgf
 outputFolder: example/output
 
 canonicalFraction: 0.7
-trappingFraction: 0.3
+transsplicedFraction: 0.3
 maxSequenceLength: 15
 minSequenceLength: 9
 

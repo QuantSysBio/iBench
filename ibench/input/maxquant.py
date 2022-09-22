@@ -23,10 +23,11 @@ MQ_RELEVANT_COLS = [
     MQ_MODS_KEY,
     MQ_SCAN_KEY,
     MQ_SCORE_KEY,
+    MQ_SEQ_KEY,
     MQ_SOURCE_KEY,
 ]
 
-def read_single_mq_data(mq_data, score_limit, hq_hits_only):
+def read_single_mq_data(mq_data, score_limit, hq_hits_only, filter_ptms):
     """ Function to read in MaxQuant search results from a single file.
 
     Parameters
@@ -47,7 +48,8 @@ def read_single_mq_data(mq_data, score_limit, hq_hits_only):
         usecols=MQ_RELEVANT_COLS,
     )
 
-    mq_df = mq_df[mq_data[MQ_MODS_KEY] == 'Unmodified']
+    if filter_ptms:
+        mq_df = mq_df[mq_df[MQ_MODS_KEY] == 'Unmodified']
 
     # Rename to match iBench naming scheme.
     mq_df = mq_df.rename(
@@ -59,18 +61,17 @@ def read_single_mq_data(mq_data, score_limit, hq_hits_only):
         }
     )
 
-
     mq_df[LABEL_KEY] = mq_df[MQ_DECOY_KEY].apply(
         lambda x : -1 if x == '+' else 1
     )
 
-    mq_df = mq_df.dropna(subset=[PEPTIDE_KEY, ACCESSION_KEY])
+    mq_df = mq_df.dropna(subset=[PEPTIDE_KEY])
 
     if hq_hits_only:
-        hits_df = hits_df[
-            (hits_df[ENGINE_SCORE_KEY] > score_limit)
+        mq_df = mq_df[
+            (mq_df[ENGINE_SCORE_KEY] > score_limit)
         ]
-        hits_df = hits_df[hits_df[LABEL_KEY] == 1]
+        mq_df = mq_df[mq_df[LABEL_KEY] == 1]
 
     mq_df = mq_df[[
         SOURCE_KEY,

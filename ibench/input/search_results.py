@@ -96,18 +96,21 @@ def generic_read_df(config, hq_hits_only):
                 results['qValueLimit'],
                 results['scoreLimit'],
                 hq_hits_only=hq_hits_only,
+                filter_ptms=config.filter_ptms,
             )
         elif results['searchEngine'] == 'maxQuant':
             search_df = read_single_mq_data(
                 results['resultsLocation'],
                 results['scoreLimit'],
                 hq_hits_only=hq_hits_only,
+                filter_ptms=config.filter_ptms,
             )
         elif results['searchEngine'] == 'peaks':
             search_df = read_single_peaks_data(
                 results['resultsLocation'],
                 results['scoreLimit'],
                 hq_hits_only=hq_hits_only,
+                filter_ptms=config.filter_ptms,
             )
         elif results['searchEngine'] == 'percolator':
             search_df = read_single_percolator_data(

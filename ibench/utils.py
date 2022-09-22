@@ -9,7 +9,7 @@ from ibench.constants import (
     ION_OFFSET,
     PROTON,
     RESIDUE_WEIGHTS,
-    TRAPPING_KEY,
+    TRANSPLICED_KEY,
 )
 
 def remove_source_suffixes(source):
@@ -51,8 +51,8 @@ def get_pepitde_strata(hq_df):
         CISSPLICED_KEY: hq_df[
             hq_df['stratum'] == CISSPLICED_KEY
         ]['il_peptide'].unique().tolist(),
-        TRAPPING_KEY: hq_df[
-            hq_df['stratum'] == TRAPPING_KEY
+        TRANSPLICED_KEY: hq_df[
+            hq_df['stratum'] == TRANSPLICED_KEY
         ]['il_peptide'].unique().tolist(),
     }
     return peptide_strata

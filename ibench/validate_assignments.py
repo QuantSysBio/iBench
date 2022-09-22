@@ -12,7 +12,7 @@ from ibench.constants import (
     CANONICAL_KEY,
     CISSPLICED_KEY,
     GT_SCAN_KEY,
-    TRAPPING_KEY,
+    TRANSPLICED_KEY,
 )
 
 def check_assignment(df_row, modified_proteome, has_cis, enzyme):
@@ -56,8 +56,8 @@ def check_assignment(df_row, modified_proteome, has_cis, enzyme):
             return True
         return False
 
-    if df_row['stratum'] == TRAPPING_KEY:
-        # For trapping, check that not present as discoverable or as cisspliced.
+    if df_row['stratum'] == TRANSPLICED_KEY:
+        # For transspliced, check that not present as discoverable or as cisspliced.
         splice_pairs = generate_pairs(peptide)
         for protein in modified_proteome:
             if peptide in protein:
