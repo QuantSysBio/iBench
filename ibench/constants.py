@@ -34,7 +34,7 @@ IL_PEPTIDE_KEY = 'il_peptide'
 
 CANONICAL_KEY = 'canonical'
 CISSPLICED_KEY = 'cisspliced'
-TRAPPING_KEY = 'trapping'
+TRANSPLICED_KEY = 'transspliced'
 
 PROTON = 1.007276466622
 ELECTRON = 0.00054858

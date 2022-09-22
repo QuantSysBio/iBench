@@ -5,7 +5,7 @@ import random
 import numpy as np
 import pandas as pd
 
-from ibench.constants import AMINO_ACIDS, CANONICAL_KEY, CISSPLICED_KEY, TRAPPING_KEY
+from ibench.constants import AMINO_ACIDS, CANONICAL_KEY, CISSPLICED_KEY, TRANSPLICED_KEY
 
 def add_canonical_seq(protein_seq, peptide, choices):
     """ Function to add a canonical peptide to a protein at a random location.
@@ -212,10 +212,10 @@ def add_sequences(proteome, peptide_strata, enzyme):
             'frag2': peptide[splice_site:],
         })
 
-    insert_inds_1 = get_insert_inds(proteome, peptide_strata[TRAPPING_KEY])
-    insert_inds_2 = get_insert_inds(proteome, peptide_strata[TRAPPING_KEY])
+    insert_inds_1 = get_insert_inds(proteome, peptide_strata[TRANSPLICED_KEY])
+    insert_inds_2 = get_insert_inds(proteome, peptide_strata[TRANSPLICED_KEY])
 
-    for peptide, idx_1, idx_2 in zip(peptide_strata[TRAPPING_KEY], insert_inds_1, insert_inds_2):
+    for peptide, idx_1, idx_2 in zip(peptide_strata[TRANSPLICED_KEY], insert_inds_1, insert_inds_2):
         mod_idxs = (idx_1, idx_2)
         splice_site = random.randint(2, len(peptide) - 2)
         frags = (peptide[:splice_site], peptide[splice_site:])
@@ -240,7 +240,7 @@ def add_sequences(proteome, peptide_strata, enzyme):
         peptide_data.append({
             'peptide': peptide,
             'proteinIdx': -1,
-            'stratum': TRAPPING_KEY,
+            'stratum': TRANSPLICED_KEY,
             'frag1': peptide[:splice_site],
             'frag2': peptide[splice_site:],
         })

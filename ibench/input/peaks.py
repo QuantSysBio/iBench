@@ -36,7 +36,7 @@ PEAKS_RELEVANT_COLUMNS = [
 ]
 
 
-def read_single_peaks_data(df_loc, score_limit, hq_hits_only):
+def read_single_peaks_data(df_loc, score_limit, hq_hits_only, filter_ptms):
     """ Function to read in PEAKS DB search results from a single file.
 
     Parameters
@@ -53,7 +53,8 @@ def read_single_peaks_data(df_loc, score_limit, hq_hits_only):
     """
     peaks_df = pd.read_csv(df_loc, usecols=PEAKS_RELEVANT_COLUMNS)
 
-    peaks_df = peaks_df[peaks_df[PEAKS_PEPTIDE_KEY].apply(lambda x : '(' not in x)]
+    if filter_ptms:
+        peaks_df = peaks_df[peaks_df[PEAKS_PEPTIDE_KEY].apply(lambda x : '(' not in x)]
     peaks_df[PEPTIDE_KEY] = peaks_df[PEAKS_PEPTIDE_KEY].apply(
         lambda x : re.sub(r'[^A-Za-z ]', '', x)
     )

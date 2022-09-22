@@ -15,7 +15,7 @@ from ibench.constants import (
     GT_SOURCE_KEY,
     IL_PEPTIDE_KEY,
     PEPTIDE_KEY,
-    TRAPPING_KEY,
+    TRANSPLICED_KEY,
 )
 from ibench.input.mzml import process_mzml_files
 from ibench.input.mgf import process_mgf_files
@@ -88,7 +88,7 @@ def assign_strata(hq_df, config):
                 (hq_df['groupOrder'] >= disc_cut_off) &
                 (hq_df['groupOrder'] < ciss_cut_off)
             ][IL_PEPTIDE_KEY].tolist(),
-            TRAPPING_KEY: hq_df[hq_df['groupOrder'] >= ciss_cut_off][IL_PEPTIDE_KEY].tolist(),
+            TRANSPLICED_KEY: hq_df[hq_df['groupOrder'] >= ciss_cut_off][IL_PEPTIDE_KEY].tolist(),
         }
     else:
         groups = {
@@ -96,15 +96,15 @@ def assign_strata(hq_df, config):
                 hq_df['groupOrder'] < disc_cut_off
             ][IL_PEPTIDE_KEY].tolist(),
             CISSPLICED_KEY: [],
-            TRAPPING_KEY: hq_df[hq_df['groupOrder'] >= disc_cut_off][IL_PEPTIDE_KEY].tolist(),
+            TRANSPLICED_KEY: hq_df[hq_df['groupOrder'] >= disc_cut_off][IL_PEPTIDE_KEY].tolist(),
         }
 
     types_df = pd.DataFrame({
-        IL_PEPTIDE_KEY: groups[CANONICAL_KEY] + groups[CISSPLICED_KEY] + groups[TRAPPING_KEY],
+        IL_PEPTIDE_KEY: groups[CANONICAL_KEY] + groups[CISSPLICED_KEY] + groups[TRANSPLICED_KEY],
         'stratum': (
             [CANONICAL_KEY]*len(groups[CANONICAL_KEY]) +
             [CISSPLICED_KEY]*len(groups[CISSPLICED_KEY]) +
-            [TRAPPING_KEY]*len(groups[TRAPPING_KEY])
+            [TRANSPLICED_KEY]*len(groups[TRANSPLICED_KEY])
         ),
     })
 

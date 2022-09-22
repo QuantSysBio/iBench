@@ -42,15 +42,15 @@ def read_data(location, name, engine, config, flag=''):
         )
     elif engine == 'mascot':
         target_df = read_single_mascot_data(
-            location, 1.01, -1_000, hq_hits_only=False
+            location, 1.01, -1_000, hq_hits_only=False, filter_ptms=config.filter_ptms,
         )
     elif engine == 'maxquant':
         target_df = read_single_mq_data(
-            location, -1_000, hq_hits_only=False
+            location, -1_000, hq_hits_only=False, filter_ptms=config.filter_ptms,
         )
     else:
         target_df = read_single_peaks_data(
-            location, -1_000, hq_hits_only=False
+            location, -1_000, hq_hits_only=False,  filter_ptms=config.filter_ptms,
         )
 
     if engine != 'percolator':

@@ -129,7 +129,7 @@ The following config settings can be used
 | searchResults | A list of all of the search results used. The search results should be a list of outputs from PEAKS, MaxQuant, Mascot, or Percolator, see more details below. |
 | canonicalFraction | The fraction of the ground truth identifications which should be embedded as canonical sequences in the artificial reference.   |
 | cissplicedFraction | The fraction of the ground truth identifications which should be embedded as cisspliced sequences in the artificial reference.   |
-| trappingFraction | The fraction of the ground truth identifications which should be trapping sequences in the artificial reference (not discoverable as canonical or cisspliced).   |
+| transsplicedFraction | The fraction of the ground truth identifications which should be transspliced or trapping sequences in the artificial reference (not discoverable as canonical or cisspliced).   |
 | ms2Accuracy  | The m/z accuracy on the measurement of the MS2 spectrum (needed for calculating coverage and signal to noise features). |
 | enzyme       | The enzyme used to produce the peptides, options are unspecific or trypsin. |
 | proteome    | The location of a proteome fasta file which will be modified to produce the artificial reference database. |
