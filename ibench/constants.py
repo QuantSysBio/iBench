@@ -10,9 +10,11 @@ ENDC_TEXT = '\033[0m'
 BOLD_TEXT = '\033[1m'
 UNDERLINE_TEXT = '\033[4m'
 
-CHARGE_KEY = 'charge'
-PEPTIDE_KEY = 'peptide'
 ACCESSION_KEY = 'proteins'
+CHARGE_KEY = 'charge'
+HYDRO_INDEX_KEY = 'hydrophobicityIndex'
+MASS_KEY = 'mass'
+PEPTIDE_KEY = 'peptide'
 INTENSITIES_KEY = 'intensities'
 MZS_KEY = 'mzs'
 PTM_SEQ_KEY = 'ptm_seq'
@@ -22,7 +24,7 @@ LABEL_KEY = 'label'
 ENGINE_SCORE_KEY = 'engineScore'
 SPECTRAL_ANGLE_KEY = 'spectralAngle'
 MASS_DIFF_KEY = 'massDiff'
-RT_KEY = 'retentionTime'
+Q_VALUE_KEY = 'q-value'
 DELTA_SCORE_KEY = 'deltaScore'
 SEQ_LEN_KEY = 'sequenceLength'
 ACCESSION_STRATUM_KEY = 'accessionGroup'
@@ -66,7 +68,7 @@ RESIDUE_WEIGHTS = {
     'R': 156.101111,
     'N': 114.042927,
     'D': 115.026943,
-    'C': 103.009185,# + 57.021464,
+    'C': 103.009185,
     'E': 129.042593,
     'Q': 128.058578,
     'G': 57.021464,

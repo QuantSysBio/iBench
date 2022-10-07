@@ -566,9 +566,7 @@ def plot_confounding(qt_df, config):
         The Config object used to run the experiment.
     """
     strata = [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
-    repeated_strata = []
-    for stratum in strata:
-        repeated_strata.extend([stratum, stratum])
+
     qt_df['hydrophobicity'] = qt_df['truePeptide'].apply(
         lambda x : ProteinAnalysis(x).gravy()
     )
@@ -658,9 +656,10 @@ def plot_confounding(qt_df, config):
             # range=[0, y_upper_lim]
         )
         fig.update_layout(violinmode='group')
-        n_features = len(CONFOUNDING_FEATURE_NAMES)
-        for i in range(len(strata)*n_features):
-            fig['layout'][f'xaxis{i+1}']['title'] = CONFOUNDING_FEATURE_NAMES[i%n_features]
+        for i in range(len(strata)*len(CONFOUNDING_FEATURE_NAMES)):
+            fig['layout'][f'xaxis{i+1}']['title'] = CONFOUNDING_FEATURE_NAMES[
+                i%len(CONFOUNDING_FEATURE_NAMES)
+            ]
             if i%2 == 0:
                 fig['layout'][f'yaxis{i+1}']['title'] = 'Search Engine Score'
 

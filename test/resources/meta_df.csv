@@ -1,0 +1,4 @@
+peptide,proteinIdx,stratum,frag1,frag2
+HAPPY,2,canonical,,
+TIRED,0,cisspliced,T,IRED
+INRS,-1,transspliced,IN,RS

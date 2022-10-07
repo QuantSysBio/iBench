@@ -3,7 +3,6 @@
 import pandas as pd
 
 from ibench.constants import (
-    ACCESSION_KEY,
     ENGINE_SCORE_KEY,
     LABEL_KEY,
     PEPTIDE_KEY,
@@ -78,6 +77,7 @@ def read_single_mq_data(mq_data, score_limit, hq_hits_only, filter_ptms):
         SCAN_KEY,
         ENGINE_SCORE_KEY,
         PEPTIDE_KEY,
+        LABEL_KEY,
     ]]
 
     return mq_df

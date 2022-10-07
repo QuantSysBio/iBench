@@ -1,10 +1,8 @@
 """ Functions for loading experimental spectra from mzml files.
 """
-import re
-
 import numpy as np
 import pandas as pd
-from pyteomics import mzml
+from pyopenms import MSExperiment, MzMLFile # pylint: disable-msg=E0611
 
 from ibench.constants import (
     CHARGE_KEY,
@@ -16,21 +14,14 @@ from ibench.constants import (
 )
 from ibench.utils import calculate_ms2_feats
 
-def _read_mzml_file(mzml_filename, source, scan_id_mappings, config, file_idx):
-    """ Function to process an mzml file to find matches with selected scan IDs
-        and write the iBench ground truth mzml file.
-
+def _read_mzml_file(mzml_filename, scan_id_mappings, new_exp):
+    """ Function to process an MzML file to find matches with scan IDs.
     Parameters
     ----------
     mzml_filename : str
         The mzml file from which we are reading.
     scan_ids : list of int
         A list of the scan IDs we require.
-    scan_file_format : str
-        The format of the file used.
-    source_list : list of str
-        A list of source names.
-
     Returns
     -------
     scans_df : pd.DataFrame
@@ -41,28 +32,24 @@ def _read_mzml_file(mzml_filename, source, scan_id_mappings, config, file_idx):
     matched_mzs = []
     precursor_charges = []
 
-    new_spectra = []
-    with mzml.read(mzml_filename) as reader:
-        for spectrum in reader:
-            regex_match = re.match(
-                r'(\d+)(.*?)',
-                spectrum['params']['title'].split('scan=')[-1]
+    exp = MSExperiment()
+    MzMLFile().load(mzml_filename, exp)
+    for spectrum in exp:
+        scan_id = int(spectrum.getNativeID().split('scan=')[1])
+
+        if scan_id in scan_id_mappings:
+            replacement_native_id = spectrum.getNativeID().replace(
+                f'scan={scan_id}', f'scan={scan_id_mappings[scan_id]}'
             )
-            scan_id = int(regex_match.group(1))
+            spectrum.setNativeID(replacement_native_id)
+            new_exp.addSpectrum(spectrum)
+            matched_scan_ids.append(scan_id_mappings[scan_id])
+            matched_intensities.append(np.array([peak.getIntensity() for peak in spectrum]))
+            matched_mzs.append(np.array([peak.getMZ() for peak in spectrum]))
+            precursor_charges.append(spectrum.getPrecursors()[0].getCharge())
 
-            if scan_id in scan_id_mappings:
-                spectrum['params']['title'] = spectrum['params']['title'].replace(
-                    f'scan={scan_id}', f'scan={scan_id_mappings[scan_id]}'
-                ).replace(
-                    source, f'ibenchGroundTruth_{config.identifier}'
-                )
-                new_spectra.append(spectrum)
-                matched_scan_ids.append(scan_id_mappings[scan_id])
-                precursor_charges.append(spectrum['params']['charge'][0])
-                matched_intensities.append(np.array(list(spectrum['intensity array'])))
-                matched_mzs.append(np.array(list(spectrum['m/z array'])))
 
-    mzml_df = pd.DataFrame(
+    scans_df =  pd.DataFrame(
         {
             GT_SCAN_KEY: pd.Series(matched_scan_ids),
             CHARGE_KEY: pd.Series(precursor_charges),
@@ -71,38 +58,35 @@ def _read_mzml_file(mzml_filename, source, scan_id_mappings, config, file_idx):
         }
     )
 
-    mzml_df = mzml_df.drop_duplicates(
-        subset=[GT_SCAN_KEY]
-    )
+    scans_df = scans_df.drop_duplicates(subset=[GT_SCAN_KEY])
 
-    return mzml_df, new_spectra
+    return scans_df, new_exp
+
 
 def process_mzml_files(hq_df, config):
-    """ Function to read in mzml files, combine ms2 spectral data with the ground truth
-        dataset, and write a reindexed mzml file.
-
+    """ Function to read in mzML files, combine ms2 spectral data with the ground truth
+        dataset, and write a reindexed mzML file.
     Parameters
     ----------
     hq_df : pd.DataFrame
         The DataFrame of high quality PSMs identified in the original search.
     config : ibench.config.Config
         The Config object which controls the experiment.
-
     Returns
     -------
     combined_df : pd.DataFrame
-        The input DataFrame with additional information gathered from each mzml file.
+        The input DataFrame with additional information gathered from each mzML file.
     """
     sub_df_list = []
-    all_spectra = []
+    mzml_exp = MSExperiment()
     source_files = hq_df[SOURCE_KEY].unique().tolist()
-    for file_idx, source_name in enumerate(source_files):
+    for source_name in source_files:
         mzml_file = f'{config.scan_folder}/{source_name}.mzML'
-        source_name = mzml_file.split('/')[-1].strip('.mzML')
-        sub_df = hq_df[hq_df['source'] == source_name]
-        scan_mappings = dict(zip(sub_df['scan'].tolist(), sub_df[GT_SCAN_KEY].tolist()))
-        mzml_df, new_spectra = _read_mzml_file(mzml_file, source_name, scan_mappings, config, file_idx)
-        all_spectra.extend(new_spectra)
+
+        sub_df = hq_df[hq_df[SOURCE_KEY] == source_name]
+        scan_mappings = dict(zip(sub_df[SCAN_KEY].tolist(), sub_df[GT_SCAN_KEY].tolist()))
+        mzml_df, mzml_exp = _read_mzml_file(mzml_file, scan_mappings, mzml_exp)
+
         sub_df = pd.merge(
             sub_df,
             mzml_df,
@@ -115,13 +99,34 @@ def process_mzml_files(hq_df, config):
                 lambda x : calculate_ms2_feats(x, config.ms2_accuracy),
                 axis=1,
             )
+
             sub_df = sub_df.drop(['mzs', 'intensities'], axis=1)
             sub_df_list.append(sub_df)
 
-    mzml.write(
-        all_spectra,
-        output=f'{config.output_folder}/ibenchGroundTruth_{config.identifier}.mzML',
-        file_mode='w',
+    MzMLFile().store(
+        f'{config.output_folder}/ibenchGroundTruth_{config.identifier}.mzML',
+        mzml_exp
     )
+
+    with open(
+        f'{config.output_folder}/ibenchGroundTruth_{config.identifier}.mzML',
+        'r',
+        encoding='UTF-8',
+    ) as file :
+        file_data = file.read()
+
+    source_files = hq_df[SOURCE_KEY].unique().tolist()
+    for source_name in source_files:
+        mzml_file = f'{config.scan_folder}/{source_name}.mzML'
+        file_data = file_data.replace(
+            source_name, f'ibenchGroundTruth_{config.identifier}'
+        )
+
+    with open(
+        f'{config.output_folder}/ibenchGroundTruth_{config.identifier}.mzML',
+        'w',
+        encoding='UTF-8',
+    ) as file:
+        file.write(file_data)
 
     return pd.concat(sub_df_list)

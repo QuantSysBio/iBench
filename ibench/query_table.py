@@ -2,7 +2,7 @@
 """
 from Bio import SeqIO
 import pandas as pd
-from ibench.check_presence import check_cis, generate_pairs
+from ibench.check_presence import find_cis_matched_splice_reactants, generate_pairs
 from ibench.constants import (
     CANONICAL_KEY,
     CISSPLICED_KEY,
@@ -11,6 +11,7 @@ from ibench.constants import (
     GT_SOURCE_KEY,
     LABEL_KEY,
     PEPTIDE_KEY,
+    Q_VALUE_KEY,
 )
 from ibench.input.mascot import read_single_mascot_data
 from ibench.input.maxquant import read_single_mq_data
@@ -26,7 +27,7 @@ def _remap_to_proteome(peptide, proteome):
     for protein in proteome:
         if peptide in protein:
             return CANONICAL_KEY
-        if check_cis(protein, splice_pairs) is not None:
+        if find_cis_matched_splice_reactants(protein, splice_pairs) is not None:
             accession_stratum = CISSPLICED_KEY
     return accession_stratum
 
@@ -65,7 +66,7 @@ def read_data(location, name, engine, config, flag=''):
         columns={
             PEPTIDE_KEY: f'{name}{flag}Peptide',
             ENGINE_SCORE_KEY: f'{name}{flag}Score',
-            'q-value': f'{name}{flag}qValue',
+            Q_VALUE_KEY: f'{name}{flag}qValue',
             'source': GT_SOURCE_KEY,
             'scan': GT_SCAN_KEY,
         }

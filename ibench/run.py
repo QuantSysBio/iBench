@@ -29,7 +29,7 @@ def get_arguments():
     args : argparse.Namespace
         The parsed command line arguments.
     """
-    parser = ArgumentParser(description='ibench Pipeline for MS Method V.')
+    parser = ArgumentParser(description='Benchmarking Mass Spectrometry Identification Methods.')
 
     parser.add_argument(
         '--config_file',

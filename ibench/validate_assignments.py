@@ -4,7 +4,7 @@ from Bio import SeqIO
 import pandas as pd
 
 from ibench.check_presence import (
-    check_cis,
+    find_cis_matched_splice_reactants,
     check_cis_present,
     generate_pairs,
 )
@@ -62,7 +62,7 @@ def check_assignment(df_row, modified_proteome, has_cis, enzyme):
         for protein in modified_proteome:
             if peptide in protein:
                 return False
-            if has_cis and check_cis(protein, splice_pairs) is not None:
+            if has_cis and find_cis_matched_splice_reactants(protein, splice_pairs) is not None:
                 return False
         return True
 
@@ -112,3 +112,5 @@ def validate_proteome(hq_df, meta_df, output_folder, enzyme):
         f'{output_folder}/high_confidence.csv',
         index=False,
     )
+
+    return n_not_embedded

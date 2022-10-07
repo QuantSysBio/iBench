@@ -7,6 +7,7 @@ from ibench.constants import (
     CHARGE_KEY,
     CISSPLICED_KEY,
     ION_OFFSET,
+    MZS_KEY,
     PROTON,
     RESIDUE_WEIGHTS,
     TRANSPLICED_KEY,
@@ -84,9 +85,9 @@ def get_matches(df_row, group_masses, frag_z, ms2_accuracy):
             base_mass + (frag_z * PROTON)
         )/frag_z
         matched_mz_ind = np.argmin(
-            np.abs(df_row['mzs'] - fragment_mz)
+            np.abs(df_row[MZS_KEY] - fragment_mz)
         )
-        if np.abs(df_row['mzs'][matched_mz_ind] - fragment_mz) < ms2_accuracy:
+        if np.abs(df_row[MZS_KEY][matched_mz_ind] - fragment_mz) < ms2_accuracy:
             matched_locs.append(idx+1)
             matched_inds.append(matched_mz_ind)
 

@@ -6,11 +6,9 @@ from ibench.constants import (
     ACCESSION_KEY,
     ENGINE_SCORE_KEY,
     LABEL_KEY,
-    MASS_DIFF_KEY,
     PEPTIDE_KEY,
-    RT_KEY,
+    Q_VALUE_KEY,
     SCAN_KEY,
-    SEQ_LEN_KEY,
     SOURCE_KEY,
 )
 
@@ -31,23 +29,16 @@ MASCOT_PEPTIDE_KEY = 'pep_seq'
 MASCOT_SCAN_TITLE_KEY = 'pep_scan_title'
 MASCOT_PTM_SEQ_KEY = 'pep_var_mod_pos'
 MASCOT_ACCESSION_KEY = 'prot_acc'
-MASCOT_MASS_KEY = 'pep_exp_mr'
-MASCOT_PRED_MASS_KEY = 'pep_calc_mr'
 MASCOT_Q_VALUE_KEY = 'pep_expect'
 REQUIRED_MASCOT_COLUMNS = [
     MASCOT_ACCESSION_KEY,
     MASCOT_DECOY_KEY,
     MASCOT_ENGINE_SCORE_KEY,
-    MASCOT_MASS_KEY,
-    MASCOT_MISS_KEY,
     MASCOT_PEPTIDE_KEY,
-    MASCOT_PRED_MASS_KEY,
     MASCOT_PTM_SEQ_KEY,
     MASCOT_Q_VALUE_KEY,
     MASCOT_SCAN_TITLE_KEY,
 ]
-MASCOT_QUERIES_TITLE_KEY = 'StringTitle'
-MASCOT_QUERIES_RT_KEY = 'Retention time range'
 
 
 def _get_mascot_file_metadata(csv_file):
@@ -150,46 +141,6 @@ def separate_scan_and_source(df_row):
 
     return df_row
 
-def add_rt_data(hits_df, csv_filename, queries_line):
-    """ Function to add retention time to the main mascot results DataFrame
-
-    Parameters
-    ----------
-    hits_df : pd.DataFrame
-        The main search results DataFrame from Mascot.
-    csv_filename : str
-        The path to the file containing Mascot search results.
-    queries_line : int
-        The line number where mascot queries begin.
-
-    Returns
-    -------
-    hits_df : pd.DataFrame
-        The input DataFrame with a retentionTime column added.
-    """
-    if queries_line is None:
-        hits_df[RT_KEY] = 0
-        return hits_df
-    queries_df = pd.read_csv(
-        csv_filename,
-        skiprows=lambda idx : _skip_logic(idx, queries_line+2),
-        usecols=[MASCOT_QUERIES_TITLE_KEY, MASCOT_QUERIES_RT_KEY]
-    )
-
-    queries_df = queries_df.rename(columns={
-        MASCOT_QUERIES_TITLE_KEY: MASCOT_SCAN_TITLE_KEY,
-        MASCOT_QUERIES_RT_KEY: RT_KEY,
-    })
-
-    hits_df = pd.merge(
-        hits_df,
-        queries_df,
-        how='inner',
-        on=MASCOT_SCAN_TITLE_KEY,
-    )
-
-    return hits_df
-
 def _read_mascot_dfs(
         csv_filename,
         hits_line,
@@ -199,6 +150,30 @@ def _read_mascot_dfs(
         hq_hits_only,
         filter_ptms,
     ):
+    """ Function to read the various sections of a Mascot output file.
+
+    Parameters
+    ----------
+    csv_filename : str
+        The path to the file containing all of the Mascot output.
+    hits_line : int
+        The line where the hits (PSMs) begin.
+    queries_line : int
+        The line where the query data begins.
+    q_value_limit : float
+        The q-value cut off above which PSMs will be filtered.
+    score_limit : float
+        The Mascot ion score cut off below which PSMs will be filtered.
+    hq_hits_only : bool
+        Boolean flag on whehther to apply score and q-value filters and drop decoys.
+    filter_ptms : bool
+        Boolean flag on whether to remove PTM modified peptides.
+
+    Returns
+    -------
+    hits_df : pd.DataFrame
+        A DataFrame of PSMs.
+    """
     hits_df = pd.read_csv(
         csv_filename,
         skiprows=lambda idx : _skip_logic(idx, hits_line, queries_line),
@@ -212,7 +187,7 @@ def _read_mascot_dfs(
         columns={
             MASCOT_ACCESSION_KEY: ACCESSION_KEY,
             MASCOT_ENGINE_SCORE_KEY: ENGINE_SCORE_KEY,
-            MASCOT_Q_VALUE_KEY: 'q-value',
+            MASCOT_Q_VALUE_KEY: Q_VALUE_KEY,
             MASCOT_PEPTIDE_KEY: PEPTIDE_KEY,
             MASCOT_MISS_KEY: 'missedCleavages',
         }
@@ -220,29 +195,18 @@ def _read_mascot_dfs(
     hits_df = hits_df.sort_values(by=ENGINE_SCORE_KEY, ascending=False)
     hits_df = hits_df.drop_duplicates(MASCOT_SCAN_TITLE_KEY)
 
-    # Filter for Prosit and add feature columns not present.
-    hits_df[MASS_DIFF_KEY] = hits_df[MASCOT_MASS_KEY] - hits_df[MASCOT_PRED_MASS_KEY]
-    hits_df[SEQ_LEN_KEY] = hits_df[PEPTIDE_KEY].apply(len)
-    hits_df['avgResidueMass'] = hits_df[MASCOT_MASS_KEY]/hits_df[SEQ_LEN_KEY]
-    hits_df.drop([MASCOT_MASS_KEY, MASCOT_PRED_MASS_KEY], axis=1, inplace=True)
     hits_df[LABEL_KEY] = hits_df[MASCOT_DECOY_KEY].apply(
         lambda x : -1 if 'Reversed' in x or 'Random' in x else 1
     )
     if hq_hits_only:
         hits_df = hits_df[
-            (hits_df['q-value'] < q_value_limit) &
+            (hits_df[Q_VALUE_KEY] < q_value_limit) &
             (hits_df[ENGINE_SCORE_KEY] > score_limit)
         ]
         hits_df = hits_df[hits_df[LABEL_KEY] == 1]
 
     # Clean source and scan columns if required, add label.
     hits_df = hits_df.apply(separate_scan_and_source, axis=1)
-    hits_df = hits_df[
-        hits_df[MASCOT_DECOY_KEY].apply(
-            lambda x : 'Reversed' not in x and 'Random' not in x
-        )
-    ]
-    hits_df.drop([MASCOT_DECOY_KEY, MASCOT_SCAN_TITLE_KEY], axis=1, inplace=True)
 
     return hits_df
 
@@ -280,12 +244,14 @@ def read_single_mascot_data(input_filename, q_value_limit, score_limit, hq_hits_
         filter_ptms,
     )
 
-    hits_df = hits_df[[
-        'source',
-        'scan',
-        ENGINE_SCORE_KEY,
-        'q-value',
-        'peptide',
-    ]]
+    if hits_df.shape[0]:
+        hits_df = hits_df[[
+            'source',
+            'scan',
+            ENGINE_SCORE_KEY,
+            Q_VALUE_KEY,
+            'peptide',
+            LABEL_KEY,
+        ]]
 
     return hits_df

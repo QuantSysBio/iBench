@@ -1,0 +1,2 @@
+il_peptide,stratum,source,scan,peptide,charge,sequenceLength,hydrophobicityIndex,mass,gtSource,gtScan
+HAPPY,canonical,PR489_Michel_S01_rep1,8843,HAPPY,2,9,-0.9888888888888888,1088.481451,ibenchGroundTruth_gt,1
