@@ -21,17 +21,6 @@ In the example used in this data we have
 
 You will also require conda to use the iBench software.
 
-You can then clone the repo with:
-
-```
-git clone https://github.com/QuantSysBio/iBench.git
-```
-
-and navigate in your terminal to the iBench folder with:
-
-```
-cd iBench
-```
 
 ### Setting up your environment:
 
@@ -51,7 +40,7 @@ conda activate ibench
 3) You will then need to install the iBench package:
 
 ```
-python setup.py install
+pip install ibench
 ```
 
 4) To check your installation, run the following command (it is normal for this call to hang for a few seconds on first execution)
@@ -80,8 +69,13 @@ The second argument provided to iBench is --config_file. This specifies the loca
 
 ## Running a Small Example
 
-As an example we will demonstrate how iBench could be used to benchmark Mascot with Percolator Rescoring with 3 different feature sets. This example will use ground truth identifications from PEAKS and MaxQuant searches of our synthetic peptide library.
+As an example we will demonstrate how iBench could be used to benchmark Mascot with Percolator Rescoring with 3 different feature sets. This example will use ground truth identifications from PEAKS and MaxQuant searches of our synthetic peptide library. Before running this example you will need to download the necessary data with:
 
+```
+ibench --pipeline downloadExample
+```
+
+This will create a folder called example in your working directory which will allow you to run the iBench example. Alternatively, you could download the required data from [figshare](https://figshare.com/articles/dataset/iBench_Example_Data/21295470).
 
 ### Create the Ground Truth Dataset
 
