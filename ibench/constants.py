@@ -10,7 +10,7 @@ ENDC_TEXT = '\033[0m'
 BOLD_TEXT = '\033[1m'
 UNDERLINE_TEXT = '\033[4m'
 
-FIGSHARE_PATH = 'https://figshare.com/ndownloader/articles/21295470/versions/1'
+FIGSHARE_PATH = 'https://figshare.com/ndownloader/files/37787349'
 
 ACCESSION_KEY = 'proteins'
 CHARGE_KEY = 'charge'

@@ -109,7 +109,6 @@ def process_mgf_files(hq_df, config):
     for file_idx, source_name in enumerate(source_files):
         mgf_file = f'{config.scan_folder}/{source_name}.mgf'
         sub_df = hq_df[hq_df['source'] == source_name]
-        print(source_name)
         scan_mappings = dict(zip(sub_df['scan'].tolist(), sub_df[GT_SCAN_KEY].tolist()))
         mgf_df = _read_mgf_file(mgf_file, source_name, scan_mappings, config, file_idx)
 

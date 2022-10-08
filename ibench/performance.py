@@ -59,7 +59,7 @@ def create_pr_curve(qt_df, result_dict, stratum):
     recalls = []
 
     for cut_off in cut_offs:
-        pred_count, correct_count = _get_counts(
+        pred_count, correct_count, _ = _get_counts(
             qt_df, cut_off, name, stratum
         )
         if pred_count > 0:
@@ -708,7 +708,7 @@ def _get_counts(all_df, score_cut_off, name, acc_grp, with_true_negatives=False)
         ]
         return pred_count, correct_count, tn_df.shape[0]
 
-    return pred_count, correct_count
+    return pred_count, correct_count, None
 
 def plot_roc(qt_df, config):
     """ Function to plot the receiver operator curve of the identification method.

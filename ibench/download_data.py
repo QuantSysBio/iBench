@@ -25,7 +25,7 @@ def download_data():
         print(
             OKCYAN_TEXT + '\tDownloading data...' + ENDC_TEXT
         )
-        urlretrieve(FIGSHARE_PATH)
+        urlretrieve(FIGSHARE_PATH, filename=f'{os.getcwd()}/example.tar.gz')
         print(
             OKCYAN_TEXT + '\tExtracting Data...' + ENDC_TEXT
         )

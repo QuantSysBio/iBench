@@ -11,7 +11,9 @@ from ibench.check_presence import (
 from ibench.constants import (
     CANONICAL_KEY,
     CISSPLICED_KEY,
+    ENDC_TEXT,
     GT_SCAN_KEY,
+    OKCYAN_TEXT,
     TRANSPLICED_KEY,
 )
 
@@ -84,6 +86,11 @@ def validate_proteome(hq_df, meta_df, output_folder, enzyme):
     enzyme : str
         Either unspecific or trypsin.
     """
+    print(
+        OKCYAN_TEXT +
+        f'\tRunning final validation.' +
+        ENDC_TEXT
+    )
     with open(f'{output_folder}/modified_proteome.fasta', encoding='UTF-8') as prot_file:
         modified_proteome = [
             str(x.seq) for x in SeqIO.parse(prot_file,'fasta')
@@ -94,7 +101,11 @@ def validate_proteome(hq_df, meta_df, output_folder, enzyme):
         lambda x : check_assignment(x, modified_proteome, has_cis, enzyme), axis=1
     )
     n_not_embedded = meta_df[~meta_df['valid']].shape[0]
-    print(f'\tFailed to embed {n_not_embedded} peptides in the proteome.')
+    print(
+        OKCYAN_TEXT +
+        f'\tFailed to embed {n_not_embedded} peptides in the proteome.' +
+        ENDC_TEXT
+    )
 
     meta_df = meta_df.rename(columns={'peptide': 'il_peptide'})
     hq_df = pd.merge(

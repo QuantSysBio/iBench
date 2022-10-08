@@ -6,6 +6,7 @@ import random
 import numpy as np
 
 from ibench.config import Config
+from ibench.constants import ENDC_TEXT, OKGREEN_TEXT
 from ibench.download_data import download_data
 from ibench.extract_hits import extract_hq_hits
 from ibench.modify_db import modify_db
@@ -52,6 +53,11 @@ def main():
     """ Main function which executes the pipelines.
     """
     args = get_arguments()
+    print(
+        OKGREEN_TEXT +
+        f'Running iBench {args.pipeline} pipeline!' +
+        ENDC_TEXT
+    )
     if args.pipeline != 'downloadExample':
         config = Config(args.config_file)
         config.validate(args.pipeline)
