@@ -6,6 +6,7 @@ import random
 import numpy as np
 
 from ibench.config import Config
+from ibench.download_data import download_data
 from ibench.extract_hits import extract_hq_hits
 from ibench.modify_db import modify_db
 from ibench.performance import analyse_performance
@@ -14,6 +15,7 @@ from ibench.query_table import create_query_table
 # pd.options.mode.chained_assignment = None
 
 PIPELINE_OPTIONS = [
+    'downloadExample',
     'createDB',
     'analysis',
 ]
@@ -50,8 +52,12 @@ def main():
     """ Main function which executes the pipelines.
     """
     args = get_arguments()
-    config = Config(args.config_file)
-    config.validate(args.pipeline)
+    if args.pipeline != 'downloadExample':
+        config = Config(args.config_file)
+        config.validate(args.pipeline)
+
+    if args.pipeline == 'downloadExample':
+        download_data()
 
     # Creation of benchmarking datasets.
     if args.pipeline == 'createDB':

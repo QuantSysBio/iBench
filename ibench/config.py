@@ -91,5 +91,7 @@ class Config:
         elif pipeline == 'analysis':
             if self.benchmark_results is None:
                 raise ValueError('No results provided to benchmark.')
+        elif pipeline == 'downloadExample':
+            return
         else:
             raise ValueError(f'No such pipeline: {pipeline}')
