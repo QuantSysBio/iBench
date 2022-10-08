@@ -3,15 +3,16 @@ from setuptools import setup
 
 setup(
     name='ibench',
-    version='1.0.0',
+    version='1.0.1',
     description='Benchmarking for mass spectrometry identifications.',
-    author='John Cormican',
-    author_email='john.cormican@mpinat.mpg.de',
+    author='John Cormican, Juliane Liepe',
+    author_email='juliane.liepe@mpinat.mpg.de',
     packages=[
         'ibench',
         'ibench.input',
     ],
     long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
     py_modules=[
         'ibench',
         'ibench.input',
@@ -21,6 +22,7 @@ setup(
             'ibench=ibench.run:main'
         ]
     },
+    python_requires='>=3.8',
     install_requires=[
         'biopython==1.79',
         'certifi==2021.10.8',
@@ -36,5 +38,8 @@ setup(
         'six==1.16.0',
         'tenacity==8.0.1',
     ],
+    project_urls={
+        'Homepage': 'https://github.com/QuantSysBio/iBench',
+        'Tracker': 'https://github.com/QuantSysBio/iBench/issues',
+    },
 )
-# attrs-22.1.0 iniconfig-1.1.1 packaging-21.3 pluggy-1.0.0 py-1.11.0 pyparsing-3.0.9 pytest-7.1.3 tomli-2.0.1
