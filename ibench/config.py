@@ -42,7 +42,7 @@ class Config:
             f'iBench Config for Experiment : {self.identifier}' +
             f'Percentage Canonical : {round(self.discoverable_fraction*100)}' +
             f'Percentage Cisspliced : {round(self.cisspliced_fraction*100)}' +
-            f'Percentage Transspliced : {round(self.transpliced_fraction*100)}'
+            f'Percentage Transspliced : {round(self.transspliced_fraction*100)}'
         )
         return out_str
 
@@ -91,5 +91,7 @@ class Config:
         elif pipeline == 'analysis':
             if self.benchmark_results is None:
                 raise ValueError('No results provided to benchmark.')
+        elif pipeline == 'downloadExample':
+            return
         else:
             raise ValueError(f'No such pipeline: {pipeline}')

@@ -26,10 +26,13 @@ def add_canonical_seq(protein_seq, peptide, choices):
     position : int
         The index at which the peptide was added.
     """
-    pep_len = len(peptide)
     if len(choices):
         position = random.choice(choices)
-        protein_seq = protein_seq[:position] + peptide + protein_seq[:position+pep_len]
+        protein_seq = (
+            protein_seq[:position] +
+            peptide +
+            protein_seq[position + len(peptide):]
+        )
     else:
         position = len(protein_seq)
         protein_seq += peptide
@@ -72,12 +75,17 @@ def add_spliced_seq(protein_seq, peptide, choices, splice_site_range=None):
     if len(choices):
         position = random.choice(choices)
         protein_seq = (
-            protein_seq[:position] + insert_string + protein_seq[:position+pep_len]
+            protein_seq[:position] +
+            insert_string +
+            protein_seq[position+pep_len:]
         )
     else:
         position = len(protein_seq)
-        protein_seq += peptide[:splice_site] + int_seq + peptide[splice_site:]
-
+        protein_seq += (
+            peptide[:splice_site] +
+            int_seq +
+            peptide[splice_site:]
+        )
 
     return protein_seq, position, splice_site
 
@@ -101,6 +109,7 @@ def remove_substring(protein, sub_string):
     )
     return protein.replace(sub_string, replacement)
 
+
 def get_insert_inds(proteome, peptide_list):
     """ Function to randomly chose a protein for peptide addition.
 
@@ -117,14 +126,41 @@ def get_insert_inds(proteome, peptide_list):
         A list of the indices where peptides will be added.
     """
     n_proteins = len(proteome)
-    # prot_lens = [len(x) for x in proteome]
-    # total_res = sum(prot_lens)
-    # p_dist = [x/total_res for x in prot_lens]
     return np.random.choice(
         range(n_proteins),
         size=len(peptide_list),
-        # p=p_dist,
     )
+
+def get_trans_insert_inds(proteome, peptide_list):
+    """ Function to randomly chose two proteins for peptide fragments addition.
+
+    Parameters
+    ----------
+    proteome : list of str
+        A list of the proteins found in the proteome.
+    peptide_list : list of str
+        A list of the peptides to be added.
+
+    Returns
+    -------
+    insert_inds_1 : list of int
+        A list of the indices where the first fragment will be added.
+    insert_inds_2 : list of int
+        A list of the indices where the second fragment will be added.
+    """
+    n_proteins = len(proteome)
+    insert_inds_1 = []
+    insert_inds_2 = []
+    for _ in peptide_list:
+        trans_frag_inds = np.random.choice(
+            range(n_proteins),
+            size=2,
+            replace=False,
+        )
+        insert_inds_1.append(trans_frag_inds[0])
+        insert_inds_2.append(trans_frag_inds[1])
+
+    return insert_inds_1, insert_inds_2
 
 
 def add_sequences(proteome, peptide_strata, enzyme):
@@ -212,8 +248,7 @@ def add_sequences(proteome, peptide_strata, enzyme):
             'frag2': peptide[splice_site:],
         })
 
-    insert_inds_1 = get_insert_inds(proteome, peptide_strata[TRANSPLICED_KEY])
-    insert_inds_2 = get_insert_inds(proteome, peptide_strata[TRANSPLICED_KEY])
+    insert_inds_1, insert_inds_2 = get_trans_insert_inds(proteome, peptide_strata[TRANSPLICED_KEY])
 
     for peptide, idx_1, idx_2 in zip(peptide_strata[TRANSPLICED_KEY], insert_inds_1, insert_inds_2):
         mod_idxs = (idx_1, idx_2)

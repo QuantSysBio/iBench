@@ -55,6 +55,7 @@ def _read_mgf_file(mgf_filename, source, scan_id_mappings, config, file_idx):
                 ).replace(
                     source, f'ibenchGroundTruth_{config.identifier}'
                 )
+                spectrum['params']['scans'] = scan_id_mappings[scan_id]
                 new_spectra.append(spectrum)
                 matched_scan_ids.append(scan_id_mappings[scan_id])
                 precursor_charges.append(spectrum['params']['charge'][0])
@@ -107,7 +108,6 @@ def process_mgf_files(hq_df, config):
     source_files = hq_df[SOURCE_KEY].unique().tolist()
     for file_idx, source_name in enumerate(source_files):
         mgf_file = f'{config.scan_folder}/{source_name}.mgf'
-        source_name = mgf_file.split('/')[-1].strip('.mgf')
         sub_df = hq_df[hq_df['source'] == source_name]
         scan_mappings = dict(zip(sub_df['scan'].tolist(), sub_df[GT_SCAN_KEY].tolist()))
         mgf_df = _read_mgf_file(mgf_file, source_name, scan_mappings, config, file_idx)
@@ -124,7 +124,7 @@ def process_mgf_files(hq_df, config):
                 lambda x : calculate_ms2_feats(x, config.ms2_accuracy),
                 axis=1,
             )
-            sub_df = sub_df.drop(['mzs', 'intensities'], axis=1)
+            sub_df = sub_df.drop([MZS_KEY, 'intensities'], axis=1)
             sub_df_list.append(sub_df)
 
     return pd.concat(sub_df_list)

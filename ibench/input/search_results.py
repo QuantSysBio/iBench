@@ -3,7 +3,16 @@
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 import pandas as pd
 
-from ibench.constants import ENGINE_SCORE_KEY, PEPTIDE_KEY, RESIDUE_WEIGHTS, SCAN_KEY, SOURCE_KEY
+from ibench.constants import (
+    ENGINE_SCORE_KEY,
+    HYDRO_INDEX_KEY,
+    MASS_KEY,
+    PEPTIDE_KEY,
+    RESIDUE_WEIGHTS,
+    SCAN_KEY,
+    SEQ_LEN_KEY,
+    SOURCE_KEY,
+)
 from ibench.input.mascot import read_single_mascot_data
 from ibench.input.maxquant import read_single_mq_data
 from ibench.input.peaks import read_single_peaks_data
@@ -23,9 +32,9 @@ def _add_features(df_row):
         The updated row containing calculated features.
     """
     peptide = df_row['peptide']
-    df_row['hydrophobicityIndex'] = ProteinAnalysis(peptide).gravy()
-    df_row['sequenceLength'] = len(peptide)
-    df_row['mass'] = sum((RESIDUE_WEIGHTS[res] for res in peptide))
+    df_row[HYDRO_INDEX_KEY] = ProteinAnalysis(peptide).gravy()
+    df_row[SEQ_LEN_KEY] = len(peptide)
+    df_row[MASS_KEY] = sum((RESIDUE_WEIGHTS[res] for res in peptide))
 
     return df_row
 

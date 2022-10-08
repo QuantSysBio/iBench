@@ -11,9 +11,11 @@ from ibench.check_presence import generate_pairs
 from ibench.constants import (
     CANONICAL_KEY,
     CISSPLICED_KEY,
+    ENDC_TEXT,
     GT_SCAN_KEY,
     GT_SOURCE_KEY,
     IL_PEPTIDE_KEY,
+    OKCYAN_TEXT,
     PEPTIDE_KEY,
     TRANSPLICED_KEY,
 )
@@ -57,7 +59,7 @@ def assign_strata(hq_df, config):
         The input DataFrame with an additional column assigning accession strata.
     """
     print(
-        f'\t{hq_df.shape[0]} High Quality Hits to embed in proteome.'
+        OKCYAN_TEXT + f'\t{hq_df.shape[0]} High Quality Hits to embed in proteome.' + ENDC_TEXT
     )
 
     groups = hq_df['peptideGroup'].unique().tolist()

@@ -4,9 +4,14 @@ import pandas as pd
 
 from ibench.constants import (
     ENGINE_SCORE_KEY,
+    LABEL_KEY,
+    PEPTIDE_KEY,
     SCAN_KEY,
     SOURCE_KEY,
+    Q_VALUE_KEY
 )
+PERCOLATOR_SCORE_KEY = 'score'
+PERCOLATOR_PSM_ID_KEY = 'PSMId'
 
 def get_source_and_scan(df_row):
     """ Function to extract the source, scan, and charge from the PSMId.
@@ -15,7 +20,7 @@ def get_source_and_scan(df_row):
     ----------
     df_row
     """
-    psm_data = df_row['PSMId'].split('_')
+    psm_data = df_row[PERCOLATOR_PSM_ID_KEY].split('_')
     df_row[SOURCE_KEY] = '_'.join(psm_data[:-2])
     df_row[SCAN_KEY] = int(psm_data[-2])
     return df_row
@@ -25,6 +30,7 @@ def read_single_percolator_data(
         q_value_limit,
         score_limit,
         hq_hits_only,
+        label=1,
     ):
     """ Function to read a Percolator .psms file
 
@@ -39,18 +45,20 @@ def read_single_percolator_data(
 
     if hq_hits_only:
         perc_df = perc_df[
-            (perc_df['q-value'] < q_value_limit) &
-            (perc_df['score'] > score_limit)
+            (perc_df[Q_VALUE_KEY] < q_value_limit) &
+            (perc_df[PERCOLATOR_SCORE_KEY] > score_limit)
         ]
 
     perc_df = perc_df.apply(get_source_and_scan, axis=1)
-    perc_df = perc_df.rename(columns={'score': ENGINE_SCORE_KEY})
+    perc_df = perc_df.rename(columns={PERCOLATOR_SCORE_KEY: ENGINE_SCORE_KEY})
+    perc_df[LABEL_KEY] = label
     perc_df = perc_df[[
         SOURCE_KEY,
         SCAN_KEY,
         ENGINE_SCORE_KEY,
-        'q-value',
-        'peptide',
+        Q_VALUE_KEY,
+        PEPTIDE_KEY,
+        LABEL_KEY,
     ]]
 
     return perc_df

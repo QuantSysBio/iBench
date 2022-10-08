@@ -4,14 +4,16 @@ from Bio import SeqIO
 import pandas as pd
 
 from ibench.check_presence import (
-    check_cis,
+    find_cis_matched_splice_reactants,
     check_cis_present,
     generate_pairs,
 )
 from ibench.constants import (
     CANONICAL_KEY,
     CISSPLICED_KEY,
+    ENDC_TEXT,
     GT_SCAN_KEY,
+    OKCYAN_TEXT,
     TRANSPLICED_KEY,
 )
 
@@ -62,7 +64,7 @@ def check_assignment(df_row, modified_proteome, has_cis, enzyme):
         for protein in modified_proteome:
             if peptide in protein:
                 return False
-            if has_cis and check_cis(protein, splice_pairs) is not None:
+            if has_cis and find_cis_matched_splice_reactants(protein, splice_pairs) is not None:
                 return False
         return True
 
@@ -84,6 +86,11 @@ def validate_proteome(hq_df, meta_df, output_folder, enzyme):
     enzyme : str
         Either unspecific or trypsin.
     """
+    print(
+        OKCYAN_TEXT +
+        f'\tRunning final validation.' +
+        ENDC_TEXT
+    )
     with open(f'{output_folder}/modified_proteome.fasta', encoding='UTF-8') as prot_file:
         modified_proteome = [
             str(x.seq) for x in SeqIO.parse(prot_file,'fasta')
@@ -94,7 +101,11 @@ def validate_proteome(hq_df, meta_df, output_folder, enzyme):
         lambda x : check_assignment(x, modified_proteome, has_cis, enzyme), axis=1
     )
     n_not_embedded = meta_df[~meta_df['valid']].shape[0]
-    print(f'\tFailed to embed {n_not_embedded} peptides in the proteome.')
+    print(
+        OKCYAN_TEXT +
+        f'\tFailed to embed {n_not_embedded} peptides in the proteome.' +
+        ENDC_TEXT
+    )
 
     meta_df = meta_df.rename(columns={'peptide': 'il_peptide'})
     hq_df = pd.merge(
@@ -112,3 +123,5 @@ def validate_proteome(hq_df, meta_df, output_folder, enzyme):
         f'{output_folder}/high_confidence.csv',
         index=False,
     )
+
+    return n_not_embedded

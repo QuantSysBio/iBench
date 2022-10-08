@@ -2,7 +2,7 @@
 """
 import re
 
-def check_cis(protein, splice_reactants):
+def find_cis_matched_splice_reactants(protein, splice_reactants):
     """ Function to check if any two potential splice reactants of a peptide are present in
         a single protein.
 

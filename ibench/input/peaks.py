@@ -15,21 +15,15 @@ from ibench.utils import remove_source_suffixes
 
 # Define the relevant column names from PEAKS DB search results.
 PEAKS_ACCESSION_KEY = 'Accession'
-PEAKS_LEN_KEY = 'Length'
-PEAKS_MASS_KEY = 'Mass'
-PEAKS_MZ_KEY = 'm/z'
 PEAKS_PEPTIDE_KEY = 'Peptide'
 PEAKS_PTM_KEY = 'PTM'
-PEAKS_RETENTION_TIME_KEY = 'RT'
 PEAKS_SCAN_KEY = 'Scan'
 PEAKS_SCORE_KEY = '-10lgP'
 PEAKS_SOURCE_KEY = 'Source File'
 PEAKS_RELEVANT_COLUMNS = [
     PEAKS_ACCESSION_KEY,
-    PEAKS_LEN_KEY,
     PEAKS_PEPTIDE_KEY,
     PEAKS_PTM_KEY,
-    PEAKS_RETENTION_TIME_KEY,
     PEAKS_SCAN_KEY,
     PEAKS_SCORE_KEY,
     PEAKS_SOURCE_KEY,
@@ -68,7 +62,6 @@ def read_single_peaks_data(df_loc, score_limit, hq_hits_only, filter_ptms):
         peaks_df = peaks_df[peaks_df[ENGINE_SCORE_KEY] > score_limit]
 
     peaks_df = peaks_df[peaks_df[PEAKS_ACCESSION_KEY].apply(lambda x : isinstance(x, str))]
-
     peaks_df[LABEL_KEY] = peaks_df[PEAKS_ACCESSION_KEY].apply(
         lambda x : -1 if isinstance(x, str) and '#DECOY#' in x else 1
     )
@@ -89,6 +82,7 @@ def read_single_peaks_data(df_loc, score_limit, hq_hits_only, filter_ptms):
         SCAN_KEY,
         ENGINE_SCORE_KEY,
         PEPTIDE_KEY,
+        LABEL_KEY,
     ]]
 
 

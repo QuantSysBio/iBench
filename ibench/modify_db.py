@@ -1,7 +1,6 @@
 """ Function for creating the artificial reference database.
 """
 import random
-import time
 
 from Bio import SeqIO
 import pandas as pd
@@ -12,11 +11,11 @@ from ibench.add_seqs import (
     remove_substring,
 )
 from ibench.check_presence import (
-    check_cis,
+    find_cis_matched_splice_reactants,
     check_cis_present,
     generate_pairs,
 )
-from ibench.constants import AMINO_ACIDS, CANONICAL_KEY, CISSPLICED_KEY, TRANSPLICED_KEY
+from ibench.constants import AMINO_ACIDS, CANONICAL_KEY, CISSPLICED_KEY, ENDC_TEXT, OKCYAN_TEXT, TRANSPLICED_KEY
 from ibench.utils import get_pepitde_strata
 from ibench.validate_assignments import validate_proteome
 
@@ -58,7 +57,7 @@ def remove_matches(proteome, peptide_strata, ids_of_interest=None):
                     proteome[idx] = remove_substring(proteome[idx], peptide)
 
                 if len(peptide_strata[CISSPLICED_KEY]) and stratum != CANONICAL_KEY:
-                    replace_strings = check_cis(proteome[idx], splice_pairs)
+                    replace_strings = find_cis_matched_splice_reactants(proteome[idx], splice_pairs)
                     if replace_strings is not None:
                         for replace_string in replace_strings:
                             modified_ids.append(idx)
@@ -112,28 +111,22 @@ def check_sequences(
     # Canonical Peptides, check existence and add if not found.
     non_spliced_df = peptide_df[peptide_df['stratum'] == CANONICAL_KEY]
     for _, df_row in non_spliced_df.iterrows():
-        protein_idx = df_row['proteinIdx']
         if enzyme == 'trypsin':
             peptide = 'K' + df_row['peptide']
         else:
             peptide = df_row['peptide']
-        if run_idx > 1 and protein_idx not in modified_ids:
+        if run_idx > 1 and df_row['proteinIdx'] not in modified_ids:
             continue
-        if peptide not in modified_proteome[protein_idx]:
-            modified_proteome[protein_idx] += peptide
-            newly_modified_ids.append(protein_idx)
-            if run_idx > 5:
-                print('disc', df_row['peptide'])
+        if peptide not in modified_proteome[df_row['proteinIdx']]:
+            modified_proteome[df_row['proteinIdx']] += peptide
+            newly_modified_ids.append(df_row['proteinIdx'])
 
     # Cisspliced Peptides, check absence as canonical and presence as spliced.
     cis_spliced_df = peptide_df[peptide_df['stratum'] == CISSPLICED_KEY]
     for _, df_row in cis_spliced_df.iterrows():
         # Check absent as discoverable
-        protein_idx = df_row['proteinIdx']
         for other_idx in modified_ids:
             if df_row['peptide'] in modified_proteome[other_idx]:
-                if run_idx > 5:
-                    print('cis found can', df_row['peptide'])
                 modified_proteome[other_idx] = modified_proteome[other_idx].replace(
                     df_row['peptide'],
                     ''.join(
@@ -143,24 +136,24 @@ def check_sequences(
                 newly_modified_ids.append(other_idx)
 
         # If not already validated check existence as a cis-spliced
-        if run_idx > 1 and protein_idx not in modified_ids:
+        if run_idx > 1 and df_row['proteinIdx'] not in modified_ids:
             continue
 
         if not check_cis_present(
-                modified_proteome[protein_idx],
+                modified_proteome[df_row['proteinIdx']],
                 df_row['frag1'],
                 df_row['frag2'],
             ):
             if len(df_row['frag1']) > len(df_row['frag2']):
-                modified_proteome[protein_idx], _, new_splice_site = add_spliced_seq(
-                    modified_proteome[protein_idx],
+                modified_proteome[df_row['proteinIdx']], _, new_splice_site = add_spliced_seq(
+                    modified_proteome[df_row['proteinIdx']],
                     df_row['peptide'],
                     [],
                     splice_site_range=range(1, len(df_row['frag1'])-1)
                 )
             else:
-                modified_proteome[protein_idx], _, new_splice_site = add_spliced_seq(
-                    modified_proteome[protein_idx],
+                modified_proteome[df_row['proteinIdx']], _, new_splice_site = add_spliced_seq(
+                    modified_proteome[df_row['proteinIdx']],
                     df_row['peptide'],
                     [],
                     splice_site_range=range(len(df_row['frag1'])+1, len(df_row['peptide']))
@@ -168,9 +161,7 @@ def check_sequences(
             index = peptide_df.index[peptide_df['peptide'] == df_row['peptide']].tolist()[0]
             peptide_df.loc[index, 'frag1'] = df_row['peptide'][:new_splice_site]
             peptide_df.loc[index, 'frag2'] = df_row['peptide'][new_splice_site:]
-            newly_modified_ids.append(protein_idx)
-            if run_idx > 5:
-                print('cis not found', df_row['peptide'])
+            newly_modified_ids.append(df_row['proteinIdx'])
 
     trans_df = peptide_df[peptide_df['stratum'] == TRANSPLICED_KEY]
     for _, df_row in trans_df.iterrows():
@@ -184,20 +175,19 @@ def check_sequences(
                     )
                 )
                 newly_modified_ids.append(other_idx)
-                print('Transspliced Peptide Present as Canonical:', df_row['peptide'])
 
             # Check existence as cisspliced
             if cis_spliced_df.shape[0]:
                 trans_pairs = generate_pairs(df_row['peptide'])
-                replace_frags = check_cis(modified_proteome[other_idx], trans_pairs)
+                replace_frags = find_cis_matched_splice_reactants(
+                    modified_proteome[other_idx], trans_pairs
+                )
                 if replace_frags is not None:
                     for replace_string in replace_frags:
                         newly_modified_ids.append(other_idx)
                         modified_proteome[other_idx] = remove_substring(
                             modified_proteome[other_idx], replace_string
                         )
-                    if run_idx > 5:
-                        print('Transspliced Peptide Present as Spliced:', df_row['peptide'])
 
     return peptide_df, modified_proteome, newly_modified_ids
 
@@ -234,10 +224,11 @@ def add_seqs_to_proteome(output_folder, peptide_strata, enzyme):
     while modified_ids:
         modified_ids = set(modified_ids)
         print(
-            f'Sequence Adding, Iteration {idx}, {len(modified_ids)} sequences to check.'
+            OKCYAN_TEXT +
+            f'\tSequence Adding, Iteration {idx}, {len(modified_ids)} sequences to check.' +
+            ENDC_TEXT
         )
-        if idx > 2:
-            print(modified_ids)
+
         peptide_df, modified_proteome, modified_ids = check_sequences(
             peptide_df,
             modified_proteome,
@@ -276,8 +267,6 @@ def clean_proteome(fasta_sequences, peptide_strata, output_folder):
     cleaned_proteome : list of str
         The input proteome with all matches removed.
     """
-    start = time.time()
-
     # Clean proteome.
     cleaned_proteome, modified_ids = remove_matches(
         fasta_sequences,
@@ -288,7 +277,9 @@ def clean_proteome(fasta_sequences, peptide_strata, output_folder):
     while modified_ids:
         modified_ids = set(modified_ids)
         print(
-            f'Peptide Cleaning, Iteration {idx}, {len(modified_ids)} proteins to clean.'
+            OKCYAN_TEXT +
+            f'\tPeptide Cleaning, Iteration {idx}, {len(modified_ids)} proteins to clean.' +
+            ENDC_TEXT
         )
 
         cleaned_proteome, modified_ids = remove_matches(
@@ -298,8 +289,6 @@ def clean_proteome(fasta_sequences, peptide_strata, output_folder):
         )
         idx += 1
 
-    end = time.time()
-    print(f'Time spent cleaning proteome: {round(end-start, 2)}s')
 
 
     with open(f'{output_folder}/cleaned_proteome.fasta', 'w', encoding='UTF-8') as out_file:
