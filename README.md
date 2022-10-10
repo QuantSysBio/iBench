@@ -1,18 +1,28 @@
 # iBench
 Benchmarking Mass Spectrometry Identification Methods.
 
+![](https://raw.githubusercontent.com/QuantSysBio/iBench/iBench-1.0.2-Final-Readme-Update/img/iBench-logo.png)
+
 iBench is a tool to help you understand the performance of an mass spectrometry identification method
 
 To use iBench you will need:
+
 * A source of ground truth identifications which you are confident in.
+
 * MS data for the ground truth identifications (mgf or mzML format)
+
 * A proteome fasta file to modify.
+
 * An identification method or set of method which you wish to benchmark.
 
 In the example used in this data we have
+
 * Ground Truth Identifications : Synthetic Peptides identified at 1% FDR by both MaxQuant and PEAKS.
+
 * MS data : mgf files for the Synthetic Peptide MS measurments.
+
 * Fasta File : This file comes from the expressed proteome of K562 cell line.
+
 * Identification Method(s) : We provide output files for Mascot search and percolator rescoring for 3 different feature sets.
 
 ## Set Up
