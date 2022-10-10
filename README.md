@@ -1,8 +1,8 @@
 # iBench
-Benchmarking Mass Spectrometry Identification Methods.
 
 <img src="https://raw.githubusercontent.com/QuantSysBio/iBench/iBench-1.0.2-Final-Readme-Update/img/iBench-logo.png" alt="drawing" width="200"/>
 
+Benchmarking Mass Spectrometry Identification Methods.
 
 iBench is a tool to help you understand the performance of an mass spectrometry identification method
 
@@ -25,6 +25,15 @@ In the example used in this data we have
 * Fasta File : This file comes from the expressed proteome of K562 cell line.
 
 * Identification Method(s) : We provide output files for Mascot search and percolator rescoring for 3 different feature sets.
+
+
+## Cite
+
+Please cite the following article if you are using iBench in your research:
+
+> Cormican, J. A., Soh, W. T., Mishto, M., and Liepe, J. (2022) iBench: A ground truth approach for advanced validation of mass spectrometry identification method. Proteomics, e2200271. \
+ [doi.org/10.1002/pmic.202200271](https://doi.org/10.1002/pmic.202200271)
+
 
 ## Set Up
 
