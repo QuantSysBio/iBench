@@ -1,7 +1,7 @@
 # iBench
 Benchmarking Mass Spectrometry Identification Methods.
 
-<img src="https://raw.githubusercontent.com/QuantSysBio/iBench/iBench-1.0.2-Final-Readme-Update/img/iBench-logo.pngg" alt="drawing" width="200"/>
+<img src="https://raw.githubusercontent.com/QuantSysBio/iBench/iBench-1.0.2-Final-Readme-Update/img/iBench-logo.png" alt="drawing" width="200"/>
 
 
 iBench is a tool to help you understand the performance of an mass spectrometry identification method
