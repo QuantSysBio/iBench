@@ -1,6 +1,6 @@
 # iBench
 
-<img src="https://raw.githubusercontent.com/QuantSysBio/iBench/iBench-1.0.2-Final-Readme-Update/img/iBench-logo.png" alt="drawing" width="200"/>
+<img src="https://raw.githubusercontent.com/QuantSysBio/iBench/main/img/iBench-logo.png" alt="drawing" width="200"/>
 
 Benchmarking Mass Spectrometry Identification Methods.
 
