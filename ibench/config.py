@@ -21,6 +21,7 @@ ALL_CONFIG_KEYS = (
     'qValueCutOffs',
     'canonicalFraction',
     'cissplicedFraction',
+    'singleScanFile',
     'transsplicedFraction',
     'proteome',
     'ms2Accuracy',
@@ -75,6 +76,7 @@ class Config:
         self.ms2_accuracy = config_dict.get('ms2Accuracy', 0.02)
         self.enzyme = config_dict.get('enzyme')
         self.max_intervening = config_dict.get('maxIntervening', 25)
+        self.single_scan_file = config_dict.get('singleScanFile', True)
 
         if self.cisspliced_fraction > 0.0:
             self.closeness_cut_off = config_dict.get('closenessCutOff', 3)

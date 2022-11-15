@@ -17,6 +17,7 @@ from ibench.constants import (
     IL_PEPTIDE_KEY,
     OKCYAN_TEXT,
     PEPTIDE_KEY,
+    SOURCE_KEY,
     TRANSPLICED_KEY,
 )
 from ibench.input.mzml import process_mzml_files
@@ -232,13 +233,19 @@ def extract_hq_hits(config):
 
     hq_df = assign_strata(target_df, config)
     hq_df = hq_df.reset_index(drop=True)
-    hq_df[GT_SOURCE_KEY] = f'ibenchGroundTruth_{config.identifier}'
+    scan_files = sorted(hq_df[SOURCE_KEY].unique().tolist())
+    if config.single_scan_file:
+        hq_df[GT_SOURCE_KEY] = f'ibenchGroundTruth_{config.identifier}'
+    else:
+        hq_df[GT_SOURCE_KEY] = hq_df[SOURCE_KEY].apply(
+            lambda x : f'ibenchGroundTruth_{config.identifier}_{scan_files.index(x)}'
+        )
     hq_df[GT_SCAN_KEY] = hq_df.index + 1
 
     if config.scan_format == 'mgf':
-        hq_df = process_mgf_files(hq_df, config)
+        hq_df = process_mgf_files(hq_df, config, scan_files)
     else:
-        hq_df = process_mzml_files(hq_df, config)
+        hq_df = process_mzml_files(hq_df, config, scan_files)
 
     hq_df = hq_df.sort_values(by=GT_SCAN_KEY)
 
