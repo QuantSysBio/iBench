@@ -15,13 +15,20 @@ from ibench.check_presence import (
     check_cis_present,
     generate_pairs,
 )
-from ibench.constants import AMINO_ACIDS, CANONICAL_KEY, CISSPLICED_KEY, ENDC_TEXT, OKCYAN_TEXT, TRANSPLICED_KEY
+from ibench.constants import (
+    AMINO_ACIDS,
+    CANONICAL_KEY,
+    CISSPLICED_KEY,
+    ENDC_TEXT,
+    OKCYAN_TEXT,
+    TRANSPLICED_KEY,
+)
 from ibench.utils import get_pepitde_strata
 from ibench.validate_assignments import validate_proteome
 
 FASTA_WIDTH = 80
 
-def remove_matches(proteome, peptide_strata, ids_of_interest=None):
+def remove_matches(proteome, peptide_strata, max_intervening, ids_of_interest=None):
     """ Function to remove all canonical matches for all strata from the proteome and
         remove all cisspliced matches for non-canonical strata.
 
@@ -57,7 +64,11 @@ def remove_matches(proteome, peptide_strata, ids_of_interest=None):
                     proteome[idx] = remove_substring(proteome[idx], peptide)
 
                 if len(peptide_strata[CISSPLICED_KEY]) and stratum != CANONICAL_KEY:
-                    replace_strings = find_cis_matched_splice_reactants(proteome[idx], splice_pairs)
+                    replace_strings = find_cis_matched_splice_reactants(
+                        proteome[idx],
+                        splice_pairs,
+                        max_intervening,
+                    )
                     if replace_strings is not None:
                         for replace_string in replace_strings:
                             modified_ids.append(idx)
@@ -89,11 +100,17 @@ def modify_db(config):
         fasta_sequences,
         peptide_strata,
         config.output_folder,
+        config.max_intervening,
     )
 
-    meta_df = add_seqs_to_proteome(config.output_folder, peptide_strata, config.enzyme)
+    meta_df = add_seqs_to_proteome(
+        config.output_folder,
+        peptide_strata,
+        config.enzyme,
+        config.max_intervening,
+    )
 
-    validate_proteome(hq_df, meta_df, config.output_folder, config.enzyme)
+    validate_proteome(hq_df, meta_df, config.output_folder, config.enzyme, config.max_intervening)
 
 
 def check_sequences(
@@ -102,6 +119,7 @@ def check_sequences(
         modified_ids,
         enzyme,
         run_idx,
+        max_intervening,
     ):
     """ Function to ensure that all of the sequences are present in the proteome according
         to their assigned strata.
@@ -143,6 +161,7 @@ def check_sequences(
                 modified_proteome[df_row['proteinIdx']],
                 df_row['frag1'],
                 df_row['frag2'],
+                max_intervening,
             ):
             if len(df_row['frag1']) > len(df_row['frag2']):
                 modified_proteome[df_row['proteinIdx']], _, new_splice_site = add_spliced_seq(
@@ -180,7 +199,7 @@ def check_sequences(
             if cis_spliced_df.shape[0]:
                 trans_pairs = generate_pairs(df_row['peptide'])
                 replace_frags = find_cis_matched_splice_reactants(
-                    modified_proteome[other_idx], trans_pairs
+                    modified_proteome[other_idx], trans_pairs, max_intervening
                 )
                 if replace_frags is not None:
                     for replace_string in replace_frags:
@@ -191,7 +210,7 @@ def check_sequences(
 
     return peptide_df, modified_proteome, newly_modified_ids
 
-def add_seqs_to_proteome(output_folder, peptide_strata, enzyme):
+def add_seqs_to_proteome(output_folder, peptide_strata, enzyme, max_intervening):
     """ Function to add the ground truth sequences to the proteome.
 
     Parameters
@@ -235,6 +254,7 @@ def add_seqs_to_proteome(output_folder, peptide_strata, enzyme):
             modified_ids,
             enzyme,
             idx,
+            max_intervening,
         )
 
         if idx == 30:
@@ -250,7 +270,7 @@ def add_seqs_to_proteome(output_folder, peptide_strata, enzyme):
 
     return peptide_df
 
-def clean_proteome(fasta_sequences, peptide_strata, output_folder):
+def clean_proteome(fasta_sequences, peptide_strata, output_folder, max_intervening):
     """ Function for removing all existing matches from the proteome.
 
     Parameters
@@ -270,7 +290,8 @@ def clean_proteome(fasta_sequences, peptide_strata, output_folder):
     # Clean proteome.
     cleaned_proteome, modified_ids = remove_matches(
         fasta_sequences,
-        peptide_strata
+        peptide_strata,
+        max_intervening,
     )
 
     idx = 1
@@ -285,6 +306,7 @@ def clean_proteome(fasta_sequences, peptide_strata, output_folder):
         cleaned_proteome, modified_ids = remove_matches(
             cleaned_proteome,
             peptide_strata,
+            max_intervening,
             modified_ids,
         )
         idx += 1

@@ -17,7 +17,7 @@ from ibench.constants import (
     TRANSPLICED_KEY,
 )
 
-def check_assignment(df_row, modified_proteome, has_cis, enzyme):
+def check_assignment(df_row, modified_proteome, has_cis, enzyme, max_intervening):
     """ Function to check that a peptide is present in the modified proteome according to
         its assigned stratum.
 
@@ -54,6 +54,7 @@ def check_assignment(df_row, modified_proteome, has_cis, enzyme):
             modified_proteome[protein_idx],
             df_row['frag1'],
             df_row['frag2'],
+            max_intervening,
         ):
             return True
         return False
@@ -64,14 +65,18 @@ def check_assignment(df_row, modified_proteome, has_cis, enzyme):
         for protein in modified_proteome:
             if peptide in protein:
                 return False
-            if has_cis and find_cis_matched_splice_reactants(protein, splice_pairs) is not None:
+            if has_cis and find_cis_matched_splice_reactants(
+                protein,
+                splice_pairs,
+                max_intervening,
+            ) is not None:
                 return False
         return True
 
     return False
 
 
-def validate_proteome(hq_df, meta_df, output_folder, enzyme):
+def validate_proteome(hq_df, meta_df, output_folder, enzyme, max_intervening):
     """ Function to run a final validation that all peptides have been properly assigned
         in the proteome and filter any peptides which have not been.
 
@@ -88,7 +93,7 @@ def validate_proteome(hq_df, meta_df, output_folder, enzyme):
     """
     print(
         OKCYAN_TEXT +
-        f'\tRunning final validation.' +
+        '\tRunning final validation.' +
         ENDC_TEXT
     )
     with open(f'{output_folder}/modified_proteome.fasta', encoding='UTF-8') as prot_file:
@@ -98,7 +103,7 @@ def validate_proteome(hq_df, meta_df, output_folder, enzyme):
 
     has_cis = CISSPLICED_KEY in meta_df['stratum'].unique().tolist()
     meta_df['valid'] = meta_df.apply(
-        lambda x : check_assignment(x, modified_proteome, has_cis, enzyme), axis=1
+        lambda x : check_assignment(x, modified_proteome, has_cis, enzyme, max_intervening), axis=1
     )
     n_not_embedded = meta_df[~meta_df['valid']].shape[0]
     print(

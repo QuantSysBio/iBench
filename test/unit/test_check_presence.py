@@ -29,18 +29,29 @@ class TestCheckPresence(unittest.TestCase):
     def test_check_cis(self):
         matched_reactants = find_cis_matched_splice_reactants(
             PROTEIN_SEQ,
-            [('M', 'ILL'), ('MI', 'LL'), ('MIL', 'L')]
+            [('M', 'ILL'), ('MI', 'LL'), ('MIL', 'L')],
+            25
         )
         self.assertEqual(matched_reactants, ['MI', 'LL'])
 
         matched_reactants = find_cis_matched_splice_reactants(
-            PROTEIN_SEQ, [('M', 'ALL'), ('MA', 'LL'), ('MAL', 'L')]
+            PROTEIN_SEQ,
+            [('M', 'ILL'), ('MI', 'LL'), ('MIL', 'L')],
+            4
+        )
+        self.assertEqual(matched_reactants, None)
+
+        matched_reactants = find_cis_matched_splice_reactants(
+            PROTEIN_SEQ, [('M', 'ALL'), ('MA', 'LL'), ('MAL', 'L')], 25
         )
         self.assertEqual(matched_reactants, None)
 
     def test_check_cis_present(self):
-        cis_present_mill = check_cis_present(PROTEIN_SEQ, 'MI', 'LL')
+        cis_present_mill = check_cis_present(PROTEIN_SEQ, 'MI', 'LL', 25)
         self.assertEqual(cis_present_mill, True)
 
-        cis_present_mall = check_cis_present(PROTEIN_SEQ, 'MA', 'LL')
+        cis_present_mill_interv = check_cis_present(PROTEIN_SEQ, 'MI', 'LL', 4)
+        self.assertEqual(cis_present_mill_interv, False)
+
+        cis_present_mall = check_cis_present(PROTEIN_SEQ, 'MA', 'LL', 25)
         self.assertEqual(cis_present_mall, False)

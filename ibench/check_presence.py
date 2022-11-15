@@ -2,7 +2,7 @@
 """
 import re
 
-def find_cis_matched_splice_reactants(protein, splice_reactants):
+def find_cis_matched_splice_reactants(protein, splice_reactants, max_intervening):
     """ Function to check if any two potential splice reactants of a peptide are present in
         a single protein.
 
@@ -30,7 +30,13 @@ def find_cis_matched_splice_reactants(protein, splice_reactants):
             ]
             for f1_ind in frag_1_inds:
                 for f2_ind in frag_2_inds:
-                    if abs(f1_ind - f2_ind) <= 25:
+                    diff = f1_ind - f2_ind
+                    if diff > 0:
+                        limit = max_intervening + len(sr_1)
+                    else:
+                        limit = max_intervening + len(sr_2)
+
+                    if abs(diff) <= limit:
                         if len(sr_1) > 1:
                             replace_strs.append(sr_1)
                         if len(sr_2) > 1:
@@ -38,7 +44,7 @@ def find_cis_matched_splice_reactants(protein, splice_reactants):
                         return replace_strs
     return None
 
-def check_cis_present(protein, sr_1, sr_2):
+def check_cis_present(protein, sr_1, sr_2, max_intervening):
     """ Function to check if two splice reactants are present in a proteome with an intervening
         sequence length of 25 or less.
 
@@ -55,7 +61,7 @@ def check_cis_present(protein, sr_1, sr_2):
     -------
     is_present : bool
         Flag indicating if the two splice reactants are present with an intervening sequence
-        length of 25.
+        length of max_intervening.
     """
     if sr_1 in protein and sr_2 in protein:
         frag_1_inds = [
@@ -66,8 +72,15 @@ def check_cis_present(protein, sr_1, sr_2):
         ]
         for f1_ind in frag_1_inds:
             for f2_ind in frag_2_inds:
-                if abs(f1_ind - f2_ind) <= 25:
+                diff = f1_ind - f2_ind
+                if diff > 0:
+                    limit = max_intervening + len(sr_1)
+                else:
+                    limit = max_intervening + len(sr_2)
+
+                if abs(diff) <= limit:
                     return True
+
     return False
 
 

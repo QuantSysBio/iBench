@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='ibench',
-    version='1.0.2',
+    version='1.1',
     description='Benchmarking for mass spectrometry identifications.',
     author='John Cormican, Juliane Liepe',
     author_email='juliane.liepe@mpinat.mpg.de',

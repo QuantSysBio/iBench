@@ -12,13 +12,14 @@ from ibench.constants import (
     LABEL_KEY,
     PEPTIDE_KEY,
     Q_VALUE_KEY,
+    SOURCE_KEY,
 )
 from ibench.input.mascot import read_single_mascot_data
 from ibench.input.maxquant import read_single_mq_data
 from ibench.input.peaks import read_single_peaks_data
 from ibench.input.percolator import read_single_percolator_data
 
-def _remap_to_proteome(peptide, proteome):
+def _remap_to_proteome(peptide, proteome, max_intervening):
     """ Function to check for the presence of an identified peptide as either canonical
         or spliced in the input proteome.
     """
@@ -27,7 +28,7 @@ def _remap_to_proteome(peptide, proteome):
     for protein in proteome:
         if peptide in protein:
             return CANONICAL_KEY
-        if find_cis_matched_splice_reactants(protein, splice_pairs) is not None:
+        if find_cis_matched_splice_reactants(protein, splice_pairs, max_intervening) is not None:
             accession_stratum = CISSPLICED_KEY
     return accession_stratum
 
@@ -54,8 +55,8 @@ def read_data(location, name, engine, config, flag=''):
             location, -1_000, hq_hits_only=False,  filter_ptms=config.filter_ptms,
         )
 
-    if engine != 'percolator':
-        if name == 'decoy':
+    if engine in ('peaks', 'maxquant'):
+        if flag == 'Decoy':
             target_df = target_df[target_df[LABEL_KEY] == -1]
         else:
             target_df = target_df[target_df[LABEL_KEY] == 1]
@@ -77,7 +78,7 @@ def read_data(location, name, engine, config, flag=''):
                 str(x.seq) for x in SeqIO.parse(prot_file, 'fasta')
             ]
         target_df[f'{name}{flag}Stratum'] = target_df[f'{name}{flag}Peptide'].apply(
-            lambda x : _remap_to_proteome(x, modified_proteome)
+            lambda x : _remap_to_proteome(x, modified_proteome, config.max_intervening)
         )
     else:
         target_df[f'{name}{flag}Stratum'] = target_df[f'{name}{flag}Peptide'].apply(
@@ -101,7 +102,6 @@ def read_data(location, name, engine, config, flag=''):
 def create_query_table(config):
     """ Function to create a query table combining ground truth peptides with the identifications
         of one or more methods.
-
     Parameters
     ----------
     config : ibench.config.Config
@@ -114,7 +114,14 @@ def create_query_table(config):
         'peptide': 'truePeptide',
         'stratum': 'trueStratum',
     })
-    qt_df[GT_SOURCE_KEY] = f'ibenchGroundTruth_{config.identifier}'
+
+    scan_files = sorted(qt_df[SOURCE_KEY].unique().tolist())
+    if config.single_scan_file:
+        qt_df[GT_SOURCE_KEY] = f'ibenchGroundTruth_{config.identifier}'
+    else:
+        qt_df[GT_SOURCE_KEY] = qt_df[SOURCE_KEY].apply(
+            lambda x : f'ibenchGroundTruth_{config.identifier}_{scan_files.index(x)}'
+        )
 
     for method in config.benchmark_results:
         name = method['name']
@@ -130,6 +137,21 @@ def create_query_table(config):
         if 'decoyLocation' in method:
             decoy_df = read_data(
                 method['decoyLocation'],
+                name,
+                method['searchEngine'],
+                config,
+                flag='Decoy',
+            )
+
+            qt_df = pd.merge(
+                qt_df,
+                decoy_df,
+                how='left',
+                on=[GT_SOURCE_KEY, GT_SCAN_KEY],
+            )
+        elif method['searchEngine'] in ('peaks', 'maxquant'):
+            decoy_df = read_data(
+                method['resultsLocation'],
                 name,
                 method['searchEngine'],
                 config,

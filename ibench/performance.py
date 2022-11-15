@@ -15,14 +15,12 @@ from ibench.html_report import create_html_report
 
 def _generate_cut_offs(query_table, score_key, n_steps):
     """ Helper function to generate many score cut offs to for creation of precision recall curve.
-
     Parameters
     ----------
     query_table : pd.DataFrame
         A DataFrame of PSMs.
     score_key : str
         The name of the column of scores for which we are generating a precision-recall curve.
-
     Returns
     -------
     score_cuts : list of float
@@ -35,7 +33,6 @@ def _generate_cut_offs(query_table, score_key, n_steps):
 
 def create_pr_curve(qt_df, result_dict, stratum):
     """ Function to create a pr curve for a given result.
-
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -44,7 +41,6 @@ def create_pr_curve(qt_df, result_dict, stratum):
         Dictionary of meta-data about the method being plotted.
     stratum : str
         The stratum for which the ROC curve is being plotted.
-
     Returns
     -------
     pr_curve : go.Scatter
@@ -57,7 +53,6 @@ def create_pr_curve(qt_df, result_dict, stratum):
     true_count = qt_df[qt_df['trueStratum'] == stratum].shape[0]
     precisions = []
     recalls = []
-
     for cut_off in cut_offs:
         pred_count, correct_count, _ = _get_counts(
             qt_df, cut_off, name, stratum
@@ -75,7 +70,6 @@ def create_pr_curve(qt_df, result_dict, stratum):
 
 def create_roc_curve(qt_df, result_dict, stratum):
     """ Function to create a roc curve for a given result.
-
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -84,7 +78,6 @@ def create_roc_curve(qt_df, result_dict, stratum):
         Dictionary of meta-data about the method being plotted.
     stratum : str
         The stratum for which the ROC curve is being plotted.
-
     Returns
     -------
     roc_curve : go.Scatter
@@ -115,8 +108,6 @@ def create_roc_curve(qt_df, result_dict, stratum):
 
 def plot_precision_recall(qt_df, config):
     """ Function to plot the precision recall curve of the identification method.
-
-
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -134,6 +125,7 @@ def plot_precision_recall(qt_df, config):
             pr_trace, pr_val = create_pr_curve(qt_df, results, stratum)
             pr_curves[stratum].append(pr_trace)
             min_pr = min(min_pr, pr_val)
+
     y_lower_lim = floor(min_pr*10)/10
     fig = make_subplots(
         shared_yaxes=True,
@@ -182,7 +174,6 @@ def plot_precision_recall(qt_df, config):
 
 def create_fdr_curve(qt_df, results, stratum):
     """ Function to create a true vs estimated fdr curve for a given result.
-
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -191,7 +182,6 @@ def create_fdr_curve(qt_df, results, stratum):
         Dictionary of meta-data about the method being plotted.
     stratum : str
         The stratum for which the curve is being plotted.
-
     Returns
     -------
     roc_curve : go.Scatter
@@ -199,21 +189,38 @@ def create_fdr_curve(qt_df, results, stratum):
     """
     fdrs = []
     name = results['name']
-    goal_fdrs = [0.5*i for i in range(1, 11)]
-    found_fdrs = []
-    for gofdr, fdr_cut in zip(goal_fdrs, [0.005*i for i in range(1, 11)]):
-        filtered_df = qt_df[
-            (qt_df[f'{name}qValue'] < fdr_cut) &
-            (qt_df[f'{name}Stratum'] == stratum)
-        ]
-        n_found = filtered_df.shape[0]
-        correct_count = filtered_df[filtered_df.apply(
-            lambda x : x['truePeptide'].replace('I', 'L') == x[f'{name}Peptide'].replace('I', 'L'),
-            axis=1
-        )].shape[0]
-        if n_found > 0:
-            fdrs.append(100*(1-(correct_count/n_found)))
-            found_fdrs.append(gofdr)
+    if 'fdrCuts' in results:
+        goal_fdrs = results['fdrCuts'].keys()
+        found_fdrs = []
+        for gofdr in goal_fdrs:
+            filtered_df = qt_df[
+                (qt_df[f'{name}Score'] > results['fdrCuts'][gofdr]) &
+                (qt_df[f'{name}Stratum'] == stratum)
+            ]
+            n_found = filtered_df.shape[0]
+            correct_count = filtered_df[filtered_df.apply(
+                lambda x : x['truePeptide'].replace('I', 'L') == x[f'{name}Peptide'].replace('I', 'L'),
+                axis=1
+            )].shape[0]
+            if n_found > 0:
+                fdrs.append(100*(1-(correct_count/n_found)))
+                found_fdrs.append(gofdr)
+    else:
+        goal_fdrs = [0.5*i for i in range(1, 11)]
+        found_fdrs = []
+        for gofdr, fdr_cut in zip(goal_fdrs, [0.005*i for i in range(1, 11)]):
+            filtered_df = qt_df[
+                (qt_df[f'{name}qValue'] < fdr_cut) &
+                (qt_df[f'{name}Stratum'] == stratum)
+            ]
+            n_found = filtered_df.shape[0]
+            correct_count = filtered_df[filtered_df.apply(
+                lambda x : x['truePeptide'].replace('I', 'L') == x[f'{name}Peptide'].replace('I', 'L'),
+                axis=1
+            )].shape[0]
+            if n_found > 0:
+                fdrs.append(100*(1-(correct_count/n_found)))
+                found_fdrs.append(gofdr)
     return go.Scatter(
         x=found_fdrs,
         y=fdrs,
@@ -235,7 +242,7 @@ def plot_fdr_estimation(qt_df, config):
             line={'color': 'black', 'dash': 'dash'}
         )]
         for results in config.benchmark_results:
-            if results['searchEngine'] in ('mascot', 'percolator'):
+            if results['searchEngine'] in ('mascot', 'percolator') or 'fdrCuts' in results:
                 fdr_trace = create_fdr_curve(qt_df, results, stratum)
                 fdr_curves[stratum].append(fdr_trace)
 
@@ -287,7 +294,6 @@ def plot_fdr_estimation(qt_df, config):
 def analyse_performance(config):
     """ Function to analyse performance of an identification method or methods on
         iBench ground truth datasets.
-
     Parameters
     ----------
     config : ibench.config.Config
@@ -299,12 +305,12 @@ def analyse_performance(config):
     figures['roc'] = plot_roc(qt_df, config)
     figures['conf'] = plot_confounding(qt_df, config)
     figures['fdr'] = plot_fdr_estimation(qt_df, config)
+    figures['high_incorrect'] = plot_high_scoring_incorrect(qt_df, config)
     figures['distro'] = plot_overall_distro(qt_df, config)
     create_html_report(config, figures)
 
 def plot_cts(qt_df, result_dict, stratum, feature):
     """ Function to create a plot distributions of scores against continuous variables.
-
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -315,7 +321,6 @@ def plot_cts(qt_df, result_dict, stratum, feature):
         The stratum for which the curve is being plotted.
     feature : str
         The feature being plotted.
-
     Returns
     -------
     traces : list of go.Scatter
@@ -376,7 +381,6 @@ def plot_cts(qt_df, result_dict, stratum, feature):
 def plot_overall_distro(qt_df, config):
     """ Function to plot engine scores for correct and and incorrect PSMs against confounding
         variables.
-
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -434,7 +438,6 @@ def plot_overall_distro(qt_df, config):
 
 def plot_score_distro(qt_df, results):
     """ Function to create a plot distributions of scores against discrete variables.
-
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -443,7 +446,6 @@ def plot_score_distro(qt_df, results):
         Dictionary of meta-data about the method being plotted.
     stratum : str
         The stratum for which the curve is being plotted.
-
     Returns
     -------
     traces : list of go.Scatter
@@ -480,7 +482,6 @@ def plot_score_distro(qt_df, results):
 
 def plot_discrete(qt_df, results, stratum, feature):
     """ Function to create a plot distributions of scores against discrete variables.
-
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -491,7 +492,6 @@ def plot_discrete(qt_df, results, stratum, feature):
         The stratum for which the curve is being plotted.
     feature : str
         The feature being plotted.
-
     Returns
     -------
     traces : list of go.Scatter
@@ -534,14 +534,12 @@ def plot_discrete(qt_df, results, stratum, feature):
 
 def _add_decoys(df_row, name):
     """ Function to add decoy scores to the main target scores for plotting distributions.
-
     Parameters
     ----------
     df_row : pd.Series
         A query table row to be modified.
     name : str
         The name of the method.
-
     Returns
     -------
     df_row : pd.Series
@@ -557,7 +555,6 @@ def _add_decoys(df_row, name):
 def plot_confounding(qt_df, config):
     """ Function to plot engine scores for correct and and incorrect PSMs against confounding
         variables.
-
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -668,7 +665,6 @@ def plot_confounding(qt_df, config):
 
 def _get_counts(all_df, score_cut_off, name, acc_grp, with_true_negatives=False):
     """ Function to get the predicted and correct counts above a scoring threshold.
-
     Parameters
     ----------
     all_df : pd.DataFrame
@@ -679,7 +675,6 @@ def _get_counts(all_df, score_cut_off, name, acc_grp, with_true_negatives=False)
         The column name of the percolator scores.
     acc_grp : str
         The accession group we are interested in.
-
     Returns
     -------
     pred_count : int
@@ -710,9 +705,47 @@ def _get_counts(all_df, score_cut_off, name, acc_grp, with_true_negatives=False)
 
     return pred_count, correct_count, None
 
+def plot_high_scoring_incorrect(qt_df, config):
+    """ Function to plot table of high scoring incorrect identifications
+    """
+    figs = {}
+    for results in config.benchmark_results:
+        name = results['name']
+        qt_df = qt_df.sort_values(by=f'{name}Score', ascending=False)
+        qt_df.reset_index(drop=True, inplace=True)
+        qt_df[f'{name}Rank'] = qt_df.index
+        incorrect_df = qt_df[qt_df.apply(
+            lambda x : (
+                isinstance(x[f'{name}Peptide'], str) and
+                x[f'{name}Peptide'].replace('I', 'L') != x['truePeptide'].replace('I', 'L')
+            ),
+            axis=1
+        )].head(10)
+        columns = [f'{name}Rank', f'{name}Peptide', f'{name}Stratum', 'truePeptide', 'trueStratum', f'{name}Score']
+        fig = go.Figure(
+        data=[
+                go.Table(
+                    header={
+                        'values': ['Rank', 'Identified Peptide', 'Identified Stratum', 'True Peptide', 'True Stratum', 'Score'],
+                    },
+                    cells={
+                        'values': [incorrect_df[column] for column in columns],
+                    }
+                )
+            ]
+        )
+        fig.update_layout(
+            title=f'Highest Ranking Incorrect PSMs from {name}.',
+            width=1000,
+            height=450,
+            title_x=0.5
+        )
+        figs[name] = fig.to_html()
+    return figs
+
+
 def plot_roc(qt_df, config):
     """ Function to plot the receiver operator curve of the identification method.
-
     Parameters
     ----------
     qt_df : pd.DataFrame

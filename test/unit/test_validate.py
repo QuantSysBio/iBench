@@ -63,29 +63,29 @@ class TestUtils(unittest.TestCase):
         self.meta_df = pd.read_csv(f'{self.cwd}/test/resources/meta_df.csv')
 
     def test_validate_proteome_successful(self):
-        n_invalid_entries = validate_proteome(self.hq_df, self.meta_df, 'test/resources/output', None)
+        n_invalid_entries = validate_proteome(self.hq_df, self.meta_df, 'test/resources/output', None, 25)
         self.assertEqual(n_invalid_entries, 0)
 
     def test_validate_proteome_failed(self):
         self.hq_df['stratum'] = pd.Series(['transspliced', 'canonical', 'cisspliced'])
         self.meta_df['stratum'] = pd.Series(['transspliced', 'canonical', 'cisspliced'])
-        n_invalid_entries = validate_proteome(self.hq_df, self.meta_df, 'test/resources/output', None)
+        n_invalid_entries = validate_proteome(self.hq_df, self.meta_df, 'test/resources/output', None, 25)
         self.assertEqual(n_invalid_entries, 3)
 
     def test_check_assignment_can(self):
-        assigned_successful = check_assignment(CAN_DF_ROW, MODIFIED_PROTEOME, True, None)
+        assigned_successful = check_assignment(CAN_DF_ROW, MODIFIED_PROTEOME, True, None, 25)
         self.assertEqual(assigned_successful, True)
-        assigned_fail = check_assignment(CAN_DF_ROW_FAIL, MODIFIED_PROTEOME, True, None)
+        assigned_fail = check_assignment(CAN_DF_ROW_FAIL, MODIFIED_PROTEOME, True, None, 25)
         self.assertEqual(assigned_fail, False)
 
     def test_check_assignment_cis(self):
-        assigned_successful = check_assignment(CIS_DF_ROW, MODIFIED_PROTEOME, True, None)
+        assigned_successful = check_assignment(CIS_DF_ROW, MODIFIED_PROTEOME, True, None, 25)
         self.assertEqual(assigned_successful, True)
-        assigned_fail = check_assignment(CIS_DF_ROW_FAIL, MODIFIED_PROTEOME, True, None)
+        assigned_fail = check_assignment(CIS_DF_ROW_FAIL, MODIFIED_PROTEOME, True, None, 25)
         self.assertEqual(assigned_fail, False)
 
     def test_check_assignment_cis(self):
-        assigned_successful = check_assignment(TRANS_DF_ROW, MODIFIED_PROTEOME, True, None)
+        assigned_successful = check_assignment(TRANS_DF_ROW, MODIFIED_PROTEOME, True, None, 25)
         self.assertEqual(assigned_successful, True)
-        assigned_fail = check_assignment(TRANS_DF_ROW_FAIL, MODIFIED_PROTEOME, True, None)
+        assigned_fail = check_assignment(TRANS_DF_ROW_FAIL, MODIFIED_PROTEOME, True, None, 25)
         self.assertEqual(assigned_fail, False)

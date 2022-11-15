@@ -110,14 +110,35 @@ def create_html_report(config, figures):
     html_string += ('''
             </center>
             <h3>
-                Confounding Variables
+                High Scoring Incorrect Identifications
+            </h3>
+            <p>
+                These tables show the 10 highest scoring incorrect identifications for each
+                method.
+            </p>
+    ''')
+
+    for name, fig in figures['high_incorrect'].items():
+        html_string += ('''
+                    <h4>
+            ''' + name +
+            '''
+                    </h4>
+                    <center>
+            ''' + fig + '</center>'
+        )
+
+    html_string +=(
+        """<h3>
+            Confounding Variables
             </h3>
             <p>
                 This plots search engine score distributions against the values of possible
                 confounding variables for correct and incorrect PSMs for each identification
                 method.
             </p>
-    ''')
+        """
+    )
 
 
     for name, fig in figures['conf'].items():
