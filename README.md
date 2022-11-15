@@ -174,5 +174,6 @@ For benchmarking results you will require:
 | resultsLocation | The location of the results file.             |
 | decoyLocation | (optional) The location of your decoy PSMs if using Percolator or Mascot. |
 | colour  | The colour you want to identify the method with in the iBench output plots. Can be any CSS colour. |
+| fdrCuts | (optional) For PEAKS search engine, q-values are not provided in the results, however you can find score cut-offs corresponding to FDR cut off values in the PEAKS GUI. Providing a dictionary mapping q-value cut off to search engine score cut off allows iBench to plot true vs. estimated FDR for your PEAKS search results. |
 
 

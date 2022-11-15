@@ -1,4 +1,4 @@
-""" Functions.
+""" Functions to create a query table of search engine assignments against correct assignments.
 """
 from Bio import SeqIO
 import pandas as pd
@@ -12,6 +12,7 @@ from ibench.constants import (
     LABEL_KEY,
     PEPTIDE_KEY,
     Q_VALUE_KEY,
+    SOURCE_KEY,
 )
 from ibench.input.mascot import read_single_mascot_data
 from ibench.input.maxquant import read_single_mq_data
@@ -54,8 +55,8 @@ def read_data(location, name, engine, config, flag=''):
             location, -1_000, hq_hits_only=False,  filter_ptms=config.filter_ptms,
         )
 
-    if engine != 'percolator':
-        if name == 'decoy':
+    if engine in ('peaks', 'maxquant'):
+        if flag == 'Decoy':
             target_df = target_df[target_df[LABEL_KEY] == -1]
         else:
             target_df = target_df[target_df[LABEL_KEY] == 1]
@@ -114,7 +115,14 @@ def create_query_table(config):
         'peptide': 'truePeptide',
         'stratum': 'trueStratum',
     })
-    qt_df[GT_SOURCE_KEY] = f'ibenchGroundTruth_{config.identifier}'
+
+    scan_files = sorted(qt_df[SOURCE_KEY].unique().tolist())
+    if config.single_scan_file:
+        qt_df[GT_SOURCE_KEY] = f'ibenchGroundTruth_{config.identifier}'
+    else:
+        qt_df[GT_SOURCE_KEY] = qt_df[SOURCE_KEY].apply(
+            lambda x : f'ibenchGroundTruth_{config.identifier}_{scan_files.index(x)}'
+        )
 
     for method in config.benchmark_results:
         name = method['name']
@@ -130,6 +138,21 @@ def create_query_table(config):
         if 'decoyLocation' in method:
             decoy_df = read_data(
                 method['decoyLocation'],
+                name,
+                method['searchEngine'],
+                config,
+                flag='Decoy',
+            )
+
+            qt_df = pd.merge(
+                qt_df,
+                decoy_df,
+                how='left',
+                on=[GT_SOURCE_KEY, GT_SCAN_KEY],
+            )
+        elif method['searchEngine'] in ('peaks', 'maxquant'):
+            decoy_df = read_data(
+                method['resultsLocation'],
                 name,
                 method['searchEngine'],
                 config,

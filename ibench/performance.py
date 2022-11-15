@@ -57,7 +57,6 @@ def create_pr_curve(qt_df, result_dict, stratum):
     true_count = qt_df[qt_df['trueStratum'] == stratum].shape[0]
     precisions = []
     recalls = []
-
     for cut_off in cut_offs:
         pred_count, correct_count, _ = _get_counts(
             qt_df, cut_off, name, stratum
@@ -134,6 +133,7 @@ def plot_precision_recall(qt_df, config):
             pr_trace, pr_val = create_pr_curve(qt_df, results, stratum)
             pr_curves[stratum].append(pr_trace)
             min_pr = min(min_pr, pr_val)
+
     y_lower_lim = floor(min_pr*10)/10
     fig = make_subplots(
         shared_yaxes=True,
@@ -199,21 +199,38 @@ def create_fdr_curve(qt_df, results, stratum):
     """
     fdrs = []
     name = results['name']
-    goal_fdrs = [0.5*i for i in range(1, 11)]
-    found_fdrs = []
-    for gofdr, fdr_cut in zip(goal_fdrs, [0.005*i for i in range(1, 11)]):
-        filtered_df = qt_df[
-            (qt_df[f'{name}qValue'] < fdr_cut) &
-            (qt_df[f'{name}Stratum'] == stratum)
-        ]
-        n_found = filtered_df.shape[0]
-        correct_count = filtered_df[filtered_df.apply(
-            lambda x : x['truePeptide'].replace('I', 'L') == x[f'{name}Peptide'].replace('I', 'L'),
-            axis=1
-        )].shape[0]
-        if n_found > 0:
-            fdrs.append(100*(1-(correct_count/n_found)))
-            found_fdrs.append(gofdr)
+    if 'fdrCuts' in results:
+        goal_fdrs = results['fdrCuts'].keys()
+        found_fdrs = []
+        for gofdr in goal_fdrs:
+            filtered_df = qt_df[
+                (qt_df[f'{name}Score'] > results['fdrCuts'][gofdr]) &
+                (qt_df[f'{name}Stratum'] == stratum)
+            ]
+            n_found = filtered_df.shape[0]
+            correct_count = filtered_df[filtered_df.apply(
+                lambda x : x['truePeptide'].replace('I', 'L') == x[f'{name}Peptide'].replace('I', 'L'),
+                axis=1
+            )].shape[0]
+            if n_found > 0:
+                fdrs.append(100*(1-(correct_count/n_found)))
+                found_fdrs.append(gofdr)
+    else:
+        goal_fdrs = [0.5*i for i in range(1, 11)]
+        found_fdrs = []
+        for gofdr, fdr_cut in zip(goal_fdrs, [0.005*i for i in range(1, 11)]):
+            filtered_df = qt_df[
+                (qt_df[f'{name}qValue'] < fdr_cut) &
+                (qt_df[f'{name}Stratum'] == stratum)
+            ]
+            n_found = filtered_df.shape[0]
+            correct_count = filtered_df[filtered_df.apply(
+                lambda x : x['truePeptide'].replace('I', 'L') == x[f'{name}Peptide'].replace('I', 'L'),
+                axis=1
+            )].shape[0]
+            if n_found > 0:
+                fdrs.append(100*(1-(correct_count/n_found)))
+                found_fdrs.append(gofdr)
     return go.Scatter(
         x=found_fdrs,
         y=fdrs,
@@ -235,7 +252,7 @@ def plot_fdr_estimation(qt_df, config):
             line={'color': 'black', 'dash': 'dash'}
         )]
         for results in config.benchmark_results:
-            if results['searchEngine'] in ('mascot', 'percolator'):
+            if results['searchEngine'] in ('mascot', 'percolator') or 'fdrCuts' in results:
                 fdr_trace = create_fdr_curve(qt_df, results, stratum)
                 fdr_curves[stratum].append(fdr_trace)
 
@@ -299,6 +316,7 @@ def analyse_performance(config):
     figures['roc'] = plot_roc(qt_df, config)
     figures['conf'] = plot_confounding(qt_df, config)
     figures['fdr'] = plot_fdr_estimation(qt_df, config)
+    figures['high_incorrect'] = plot_high_scoring_incorrect(qt_df, config)
     figures['distro'] = plot_overall_distro(qt_df, config)
     create_html_report(config, figures)
 
@@ -709,6 +727,45 @@ def _get_counts(all_df, score_cut_off, name, acc_grp, with_true_negatives=False)
         return pred_count, correct_count, tn_df.shape[0]
 
     return pred_count, correct_count, None
+
+def plot_high_scoring_incorrect(qt_df, config):
+    """ Function to plot table of high scoring incorrect identifications
+    """
+    figs = {}
+    for results in config.benchmark_results:
+        name = results['name']
+        qt_df = qt_df.sort_values(by=f'{name}Score', ascending=False)
+        qt_df.reset_index(drop=True, inplace=True)
+        qt_df[f'{name}Rank'] = qt_df.index
+        incorrect_df = qt_df[qt_df.apply(
+            lambda x : (
+                isinstance(x[f'{name}Peptide'], str) and
+                x[f'{name}Peptide'].replace('I', 'L') != x['truePeptide'].replace('I', 'L')
+            ),
+            axis=1
+        )].head(10)
+        columns = [f'{name}Rank', f'{name}Peptide', f'{name}Stratum', 'truePeptide', 'trueStratum', f'{name}Score']
+        fig = go.Figure(
+        data=[
+                go.Table(
+                    header={
+                        'values': ['Rank', 'Identified Peptide', 'Identified Stratum', 'True Peptide', 'True Stratum', 'Score'],
+                    },
+                    cells={
+                        'values': [incorrect_df[column] for column in columns],
+                    }
+                )
+            ]
+        )
+        fig.update_layout(
+            title=f'Highest Ranking Incorrect PSMs from {name}.',
+            width=1000,
+            height=450,
+            title_x=0.5
+        )
+        figs[name] = fig.to_html()
+    return figs
+
 
 def plot_roc(qt_df, config):
     """ Function to plot the receiver operator curve of the identification method.

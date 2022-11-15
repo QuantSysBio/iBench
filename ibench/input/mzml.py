@@ -63,7 +63,7 @@ def _read_mzml_file(mzml_filename, scan_id_mappings, new_exp):
     return scans_df, new_exp
 
 
-def process_mzml_files(hq_df, config):
+def process_mzml_files(hq_df, config, scan_files):
     """ Function to read in mzML files, combine ms2 spectral data with the ground truth
         dataset, and write a reindexed mzML file.
     Parameters
@@ -79,8 +79,7 @@ def process_mzml_files(hq_df, config):
     """
     sub_df_list = []
     mzml_exp = MSExperiment()
-    source_files = hq_df[SOURCE_KEY].unique().tolist()
-    for source_name in source_files:
+    for file_idx, source_name in enumerate(scan_files):
         mzml_file = f'{config.scan_folder}/{source_name}.mzML'
 
         sub_df = hq_df[hq_df[SOURCE_KEY] == source_name]
@@ -103,30 +102,47 @@ def process_mzml_files(hq_df, config):
             sub_df = sub_df.drop(['mzs', 'intensities'], axis=1)
             sub_df_list.append(sub_df)
 
-    MzMLFile().store(
-        f'{config.output_folder}/ibenchGroundTruth_{config.identifier}.mzML',
-        mzml_exp
-    )
+        if not config.single_scan_file:
+            MzMLFile().store(
+                f'{config.output_folder}/ibenchGroundTruth_{config.identifier}_{file_idx}.mzML',
+                mzml_exp
+            )
+            _replace_source_name(
+                config.output_folder,
+                f'ibenchGroundTruth_{config.identifier}_{file_idx}',
+                [source_name]
+            )
 
+    if config.single_scan_file:
+        MzMLFile().store(
+            f'{config.output_folder}/ibenchGroundTruth_{config.identifier}.mzML',
+            mzml_exp
+        )
+        source_files = hq_df[SOURCE_KEY].unique().tolist()
+        _replace_source_name(
+            config.output_folder,
+            f'ibenchGroundTruth_{config.identifier}',
+            source_files
+        )
+
+    return pd.concat(sub_df_list)
+
+def _replace_source_name(folder, filename, source_files):
     with open(
-        f'{config.output_folder}/ibenchGroundTruth_{config.identifier}.mzML',
+        f'{folder}/{filename}.mzML',
         'r',
         encoding='UTF-8',
     ) as file :
         file_data = file.read()
 
-    source_files = hq_df[SOURCE_KEY].unique().tolist()
     for source_name in source_files:
-        mzml_file = f'{config.scan_folder}/{source_name}.mzML'
         file_data = file_data.replace(
-            source_name, f'ibenchGroundTruth_{config.identifier}'
+            source_name, filename
         )
 
     with open(
-        f'{config.output_folder}/ibenchGroundTruth_{config.identifier}.mzML',
+        f'{folder}/{filename}.mzML',
         'w',
         encoding='UTF-8',
     ) as file:
         file.write(file_data)
-
-    return pd.concat(sub_df_list)

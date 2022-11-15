@@ -5,6 +5,7 @@ import random
 
 import numpy as np
 
+import ibench
 from ibench.config import Config
 from ibench.constants import ENDC_TEXT, OKGREEN_TEXT
 from ibench.download_data import download_data
@@ -55,7 +56,7 @@ def main():
     args = get_arguments()
     print(
         OKGREEN_TEXT +
-        f'Running iBench {args.pipeline} pipeline!' +
+        f'Running iBench version {ibench.__version__} {args.pipeline} pipeline!' +
         ENDC_TEXT
     )
     if args.pipeline != 'downloadExample':

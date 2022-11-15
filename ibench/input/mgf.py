@@ -41,6 +41,12 @@ def _read_mgf_file(mgf_filename, source, scan_id_mappings, config, file_idx):
     precursor_charges = []
 
     new_spectra = []
+
+    if config.single_scan_file:
+        new_source = f'ibenchGroundTruth_{config.identifier}'
+    else:
+        new_source = f'ibenchGroundTruth_{config.identifier}_{file_idx}'
+
     with mgf.read(mgf_filename) as reader:
         for spectrum in reader:
             regex_match = re.match(
@@ -53,7 +59,7 @@ def _read_mgf_file(mgf_filename, source, scan_id_mappings, config, file_idx):
                 spectrum['params']['title'] = spectrum['params']['title'].replace(
                     f'scan={scan_id}', f'scan={scan_id_mappings[scan_id]}'
                 ).replace(
-                    source, f'ibenchGroundTruth_{config.identifier}'
+                    source, new_source
                 )
                 spectrum['params']['scans'] = scan_id_mappings[scan_id]
                 new_spectra.append(spectrum)
@@ -62,14 +68,14 @@ def _read_mgf_file(mgf_filename, source, scan_id_mappings, config, file_idx):
                 matched_intensities.append(np.array(list(spectrum['intensity array'])))
                 matched_mzs.append(np.array(list(spectrum['m/z array'])))
 
-    if file_idx == 0:
+    if file_idx == 0 or not config.single_scan_file:
         file_mode = 'w'
     else:
         file_mode = 'a'
 
     mgf.write(
         new_spectra,
-        output=f'{config.output_folder}/ibenchGroundTruth_{config.identifier}.mgf',
+        output=f'{config.output_folder}/{new_source}.mgf',
         file_mode=file_mode,
     )
 
@@ -88,7 +94,7 @@ def _read_mgf_file(mgf_filename, source, scan_id_mappings, config, file_idx):
 
     return mgf_df
 
-def process_mgf_files(hq_df, config):
+def process_mgf_files(hq_df, config, scan_files):
     """ Function to read in mgf files, combine ms2 spectral data with the ground truth
         dataset, and write a reindexed mgf file.
 
@@ -105,8 +111,7 @@ def process_mgf_files(hq_df, config):
         The input DataFrame with additional information gathered from each mgf file.
     """
     sub_df_list = []
-    source_files = hq_df[SOURCE_KEY].unique().tolist()
-    for file_idx, source_name in enumerate(source_files):
+    for file_idx, source_name in enumerate(scan_files):
         mgf_file = f'{config.scan_folder}/{source_name}.mgf'
         sub_df = hq_df[hq_df['source'] == source_name]
         scan_mappings = dict(zip(sub_df['scan'].tolist(), sub_df[GT_SCAN_KEY].tolist()))
