@@ -12,6 +12,7 @@ ALL_CONFIG_KEYS = (
     'scanFolder',
     'scanFormat',
     'searchResults',
+    'maxIntervening',
     'maxSequenceLength',
     'minSequenceLength',
     'outputFolder',
@@ -73,6 +74,7 @@ class Config:
         self.benchmark_results = config_dict.get('benchmarkResults')
         self.ms2_accuracy = config_dict.get('ms2Accuracy', 0.02)
         self.enzyme = config_dict.get('enzyme')
+        self.max_intervening = config_dict.get('maxIntervening', 25)
 
         if self.cisspliced_fraction > 0.0:
             self.closeness_cut_off = config_dict.get('closenessCutOff', 3)

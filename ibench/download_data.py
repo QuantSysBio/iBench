@@ -29,9 +29,9 @@ def download_data():
         print(
             OKCYAN_TEXT + '\tExtracting Data...' + ENDC_TEXT
         )
-        tar = tarfile.open('example.tar.gz', "r:gz")
-        tar.extractall()
-        tar.close()
+        with tarfile.open('example.tar.gz', "r:gz") as tar:
+            tar.extractall()
+
         print(
             OKCYAN_TEXT + '\tDataset ready.' + ENDC_TEXT
         )

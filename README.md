@@ -159,6 +159,7 @@ The following config settings can be used for specific user requirements in the 
 | maxSequenceLength | Define the maximum sequence length of peptides to be used in the ground truth identifications. |
 | minSequenceLength | Define the minimum sequence length of peptides to be used in the ground truth identifications. |
 | filterPTMs | Whether to filter modified peptides from the ground truth identificaitons, by default this will be True to ensure maximum confidence in the ground truth dataset, however it can be set to False if the user wishes to investigate PTMs. |
+| maxIntervening | If iBench is being used to embed spliced peptides this defines the maximum allowed intervening sequence length between splice reactants (default=25). |
 
 ### Required for analysis Execution
 
