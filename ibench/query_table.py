@@ -19,7 +19,7 @@ from ibench.input.maxquant import read_single_mq_data
 from ibench.input.peaks import read_single_peaks_data
 from ibench.input.percolator import read_single_percolator_data
 
-def _remap_to_proteome(peptide, proteome, max_intervening):
+def remap_to_proteome(peptide, proteome, max_intervening):
     """ Function to check for the presence of an identified peptide as either canonical
         or spliced in the input proteome.
     """
@@ -78,7 +78,7 @@ def read_data(location, name, engine, config, flag=''):
                 str(x.seq) for x in SeqIO.parse(prot_file, 'fasta')
             ]
         target_df[f'{name}{flag}Stratum'] = target_df[f'{name}{flag}Peptide'].apply(
-            lambda x : _remap_to_proteome(x, modified_proteome, config.max_intervening)
+            lambda x : remap_to_proteome(x, modified_proteome, config.max_intervening)
         )
     else:
         target_df[f'{name}{flag}Stratum'] = target_df[f'{name}{flag}Peptide'].apply(

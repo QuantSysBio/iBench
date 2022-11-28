@@ -55,3 +55,20 @@ class TestCheckPresence(unittest.TestCase):
 
         cis_present_mall = check_cis_present(PROTEIN_SEQ, 'MA', 'LL', 25)
         self.assertEqual(cis_present_mall, False)
+
+    def test_check_cis_with_overlap_false(self):
+        cis_present_overlap = check_cis_present(PROTEIN_SEQ, 'ESS', 'SE', 25)
+        self.assertEqual(cis_present_overlap, False)
+
+        cis_present_overlap = check_cis_present(PROTEIN_SEQ, 'SSE', 'ES', 25)
+        self.assertEqual(cis_present_overlap, False)
+
+        cis_present_overlap = check_cis_present(PROTEIN_SEQ, 'ITT', 'T', 25)
+        self.assertEqual(cis_present_overlap, False)
+
+    def test_check_cis_with_overlap_true(self):
+        cis_present_overlap = check_cis_present(PROTEIN_SEQ + 'SE', 'ESS', 'SE', 25)
+        self.assertEqual(cis_present_overlap, True)
+
+        cis_present_overlap = check_cis_present(PROTEIN_SEQ + 'SSE', 'SSE', 'ES', 25)
+        self.assertEqual(cis_present_overlap, True)

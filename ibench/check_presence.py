@@ -31,9 +31,13 @@ def find_cis_matched_splice_reactants(protein, splice_reactants, max_intervening
             for f1_ind in frag_1_inds:
                 for f2_ind in frag_2_inds:
                     diff = f1_ind - f2_ind
-                    if diff > 0:
+                    if diff < 0:
+                        if f1_ind + len(sr_1) >= f2_ind:
+                            continue
                         limit = max_intervening + len(sr_1)
                     else:
+                        if f2_ind + len(sr_2) >= f1_ind:
+                            continue
                         limit = max_intervening + len(sr_2)
 
                     if abs(diff) <= limit:
@@ -73,9 +77,13 @@ def check_cis_present(protein, sr_1, sr_2, max_intervening):
         for f1_ind in frag_1_inds:
             for f2_ind in frag_2_inds:
                 diff = f1_ind - f2_ind
-                if diff > 0:
+                if diff < 0:
+                    if f1_ind + len(sr_1) >= f2_ind:
+                        continue
                     limit = max_intervening + len(sr_1)
                 else:
+                    if f2_ind + len(sr_2) >= f1_ind:
+                        continue
                     limit = max_intervening + len(sr_2)
 
                 if abs(diff) <= limit:
