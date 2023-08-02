@@ -49,7 +49,7 @@ def create_pr_curve(qt_df, result_dict, stratum):
         The minimum precison value observed for any threshold.
     """
     name = result_dict['name']
-    cut_offs = _generate_cut_offs(qt_df, f'{name}Score', 1_000)
+    cut_offs = _generate_cut_offs(qt_df, f'{name}Score', 1000)
     true_count = qt_df[qt_df['trueStratum'] == stratum].shape[0]
     precisions = []
     recalls = []
@@ -57,15 +57,24 @@ def create_pr_curve(qt_df, result_dict, stratum):
         pred_count, correct_count, _ = _get_counts(
             qt_df, cut_off, name, stratum
         )
-        if pred_count > 0:
+        if pred_count/true_count > 0.02:
             precisions.append(correct_count/pred_count)
             recalls.append(correct_count/true_count)
+    
+    top_id_df = qt_df[qt_df[f'{name}Stratum'] == stratum].nlargest(n=1, columns=f'{name}Score')
+    if top_id_df[top_id_df.apply(
+        lambda x : x['truePeptide'].replace('I', 'L') == x[f'{name}Peptide'].replace('I', 'L'),
+        axis=1
+    )].shape[0]:
+        precisions.append(1.0)
+        recalls.append(1.0/true_count)
+
     min_p = min(precisions)
     return go.Scatter(
         x=recalls,
         y=precisions,
         name=f'{name} PR',
-        line={'color': result_dict['colour']}
+        line={'color': result_dict['colour'], 'dash': result_dict.get('dash')}
     ), min_p
 
 def create_roc_curve(qt_df, result_dict, stratum):
@@ -102,12 +111,50 @@ def create_roc_curve(qt_df, result_dict, stratum):
         x=fprs,
         y=tprs,
         name=f'{name} ROC',
-        line={'color': result_dict['colour']}
+        line={'color': result_dict['colour'], 'dash': result_dict.get('dash')}
     ), max_tpr
 
 
+def get_pr_dots(qt_df, stratum, config):
+    """ Function to get the 1% FDR cut offs for each method to be plotted on PR curves.
+
+    Parameters
+    ----------
+    qt_df : pd.DataFrame
+        The Query Table containing ground truth assignments joined to the user's assignments.
+    stratum : str
+        The stratum for which we require precision and recall at 1% FDR.
+    config : ibench.config.Config
+        The Config object used to run the experiment.
+    """
+    pr_dots = {}
+    for results in config.benchmark_results:
+        one_pct_cut_off = None
+        name = results['name']
+        true_count = qt_df[qt_df['trueStratum'] == stratum].shape[0]
+        if 'fdrCuts' in results:
+            one_pct_cut_off = results['fdrCuts'][1.0]
+        elif results['searchEngine'] == 'percolator':
+            one_pct_cut_off = qt_df[
+                qt_df[f'{name}qValue'] < 0.01
+            ][f'{name}Score'].min() - 0.01
+        
+        if one_pct_cut_off is not None:
+            pred_count, correct_count, _ = _get_counts(
+                qt_df, one_pct_cut_off, name, stratum
+            )
+            if pred_count > 0:
+                pr_dots[name] = {
+                    'recall': correct_count/true_count,
+                    'precision': correct_count/pred_count,
+                    'colour': results['colour']
+                }
+
+    return pr_dots
+
 def plot_precision_recall(qt_df, config):
     """ Function to plot the precision recall curve of the identification method.
+
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -115,11 +162,20 @@ def plot_precision_recall(qt_df, config):
     config : ibench.config.Config
         The Config object used to run the experiment.
     """
-    strata = [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
+    if config.allow_trans:
+        strata = sorted(
+            list(qt_df['trueStratum'].unique())
+        )
+    else:
+        strata = sorted(
+            [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
+        )
 
     pr_curves = {}
+    pr_dots = {}
     min_pr = 1.0
     for stratum in strata:
+        pr_dots[stratum] = get_pr_dots(qt_df, stratum, config)
         pr_curves[stratum] = []
         for results in config.benchmark_results:
             pr_trace, pr_val = create_pr_curve(qt_df, results, stratum)
@@ -141,6 +197,22 @@ def plot_precision_recall(qt_df, config):
                 row=1,
                 col=idx+1,
             )
+            for name in pr_dots[stratum]:
+                fig.add_trace(
+                    go.Scatter(
+                        mode='markers',
+                        x=[pr_dots[stratum][name]['recall']],
+                        y=[pr_dots[stratum][name]['precision']],
+                        name=f'{name} 1FDR Precision-Recall',
+                        showlegend=False,
+                        marker={
+                            'color': pr_dots[stratum][name]['colour'],
+                            'size': 12,
+                        },
+                    ),
+                    row=1,
+                    col=idx+1,
+                )
 
     fig.update_layout(
         width=880*len(strata),
@@ -157,7 +229,7 @@ def plot_precision_recall(qt_df, config):
         linecolor='black',
         showgrid=False,
         ticks="outside",
-        range=[0,1],
+        range=[0.0,1],
     )
     fig.update_yaxes(
         showline=True,
@@ -173,7 +245,7 @@ def plot_precision_recall(qt_df, config):
     return fig.to_html()
 
 def create_fdr_curve(qt_df, results, stratum):
-    """ Function to create a true vs estimated fdr curve for a given result.
+    """ Function to create a true vs reported fdr curve for a given result.
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -184,17 +256,29 @@ def create_fdr_curve(qt_df, results, stratum):
         The stratum for which the curve is being plotted.
     Returns
     -------
-    roc_curve : go.Scatter
-        Plotly graph object for the true vs. estimated curve.
+    fdr_curve : go.Scatter
+        Plotly graph object for the true vs. reported fdr curve.
     """
     fdrs = []
     name = results['name']
     if 'fdrCuts' in results:
         goal_fdrs = results['fdrCuts'].keys()
+        fdr_dict = results['fdrCuts']
+    elif results['searchEngine'] == 'percolator':
+        name = results['name']
+        goal_fdrs = [0.005, 0.01, 0.02, 0.05]
+        fdr_dict = {
+            fdr_cut: qt_df[qt_df[f'{name}qValue'] < fdr_cut][f'{name}Score'].min() - 0.01
+            for fdr_cut in goal_fdrs
+        }
+    else:
+        goal_fdrs = []
+
+    if goal_fdrs:
         found_fdrs = []
         for gofdr in goal_fdrs:
             filtered_df = qt_df[
-                (qt_df[f'{name}Score'] > results['fdrCuts'][gofdr]) &
+                (qt_df[f'{name}Score'] > fdr_dict[gofdr]) &
                 (qt_df[f'{name}Stratum'] == stratum)
             ]
             n_found = filtered_df.shape[0]
@@ -204,7 +288,11 @@ def create_fdr_curve(qt_df, results, stratum):
             )].shape[0]
             if n_found > 0:
                 fdrs.append(100*(1-(correct_count/n_found)))
-                found_fdrs.append(gofdr)
+                if gofdr < 0.1:
+                    found_fdrs.append(gofdr*100)
+                else:
+                    found_fdrs.append(gofdr)
+
     else:
         goal_fdrs = [0.5*i for i in range(1, 11)]
         found_fdrs = []
@@ -215,7 +303,9 @@ def create_fdr_curve(qt_df, results, stratum):
             ]
             n_found = filtered_df.shape[0]
             correct_count = filtered_df[filtered_df.apply(
-                lambda x : x['truePeptide'].replace('I', 'L') == x[f'{name}Peptide'].replace('I', 'L'),
+                lambda x : x['truePeptide'].replace(
+                    'I', 'L'
+                ) == x[f'{name}Peptide'].replace('I', 'L'),
                 axis=1
             )].shape[0]
             if n_found > 0:
@@ -225,19 +315,26 @@ def create_fdr_curve(qt_df, results, stratum):
         x=found_fdrs,
         y=fdrs,
         name=f'{name} FDR',
-        line={'color': results['colour']}
+        line={'color': results['colour'], 'dash': results.get('dash')}
     )
 
 def plot_fdr_estimation(qt_df, config):
     """ Function to plot the accuracy of
     """
-    strata = [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
+    if config.allow_trans:
+        strata = sorted(
+            list(qt_df['trueStratum'].unique())
+        )
+    else:
+        strata = sorted(
+            [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
+        )
     fdr_curves = {}
 
     for stratum in strata:
         fdr_curves[stratum] = [go.Scatter(
-            x=[i*0.5 for i in range(11)],
-            y=[i*0.5 for i in range(11)],
+            x=[i*0.5 for i in range(2, 11)],
+            y=[i*0.5 for i in range(2, 11)],
             name='Perfect FDR Estimation',
             line={'color': 'black', 'dash': 'dash'}
         )]
@@ -277,6 +374,7 @@ def plot_fdr_estimation(qt_df, config):
         linecolor='black',
         showgrid=False,
         ticks="outside",
+        range=[0,5],
     )
     fig.update_yaxes(
         showline=True,
@@ -286,7 +384,7 @@ def plot_fdr_estimation(qt_df, config):
         ticks="outside",
     )
     for i in range(1, len(strata)+1):
-        fig['layout'][f'xaxis{i}']['title'] = 'Estimated FDR'
+        fig['layout'][f'xaxis{i}']['title'] = 'Reported FDR'
         fig['layout'][f'yaxis{i}']['title'] = 'Observed FDR'
 
     return fig.to_html()
@@ -381,6 +479,7 @@ def plot_cts(qt_df, result_dict, stratum, feature):
 def plot_overall_distro(qt_df, config):
     """ Function to plot engine scores for correct and and incorrect PSMs against confounding
         variables.
+
     Parameters
     ----------
     qt_df : pd.DataFrame
@@ -498,6 +597,7 @@ def plot_discrete(qt_df, results, stratum, feature):
         list of Plotly graph objects for the violin plots.
     """
     name = results['name']
+    print(name, feature, stratum)
     grouped_df = qt_df.groupby(feature, as_index=False)[f'{name}Score'].count()
     grouped_df.columns = [feature, 'count']
     grouped_df = grouped_df[grouped_df['count'] > qt_df.shape[0]/100]
@@ -505,7 +605,6 @@ def plot_discrete(qt_df, results, stratum, feature):
 
     qt_df = qt_df[qt_df['trueStratum'] == stratum]
     qt_df = qt_df[qt_df[feature].apply(lambda x : x in plot_vals)]
-
     qt_df['correct'] = qt_df.apply(
         lambda x : (
             'correct' if isinstance(x[f'{name}Peptide'], str) and
@@ -562,8 +661,14 @@ def plot_confounding(qt_df, config):
     config : ibench.config.Config
         The Config object used to run the experiment.
     """
-    strata = [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
-
+    if config.allow_trans:
+        strata = sorted(
+            list(qt_df['trueStratum'].unique())
+        )
+    else:
+        strata = sorted(
+            [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
+        )
     qt_df['hydrophobicity'] = qt_df['truePeptide'].apply(
         lambda x : ProteinAnalysis(x).gravy()
     )
@@ -715,9 +820,9 @@ def plot_high_scoring_incorrect(qt_df, config):
         qt_df.reset_index(drop=True, inplace=True)
         qt_df[f'{name}Rank'] = qt_df.index
         incorrect_df = qt_df[qt_df.apply(
-            lambda x : (
-                isinstance(x[f'{name}Peptide'], str) and
-                x[f'{name}Peptide'].replace('I', 'L') != x['truePeptide'].replace('I', 'L')
+            lambda x, na=name : (
+                isinstance(x[f'{na}Peptide'], str) and
+                x[f'{na}Peptide'].replace('I', 'L') != x['truePeptide'].replace('I', 'L')
             ),
             axis=1
         )].head(10)
@@ -753,7 +858,15 @@ def plot_roc(qt_df, config):
     config : ibench.config.Config
         The Config object used to run the experiment.
     """
-    strata = [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
+    # strata = [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
+    if config.allow_trans:
+        strata = sorted(
+            list(qt_df['trueStratum'].unique())
+        )
+    else:
+        strata = sorted(
+            [x for x in qt_df['trueStratum'].unique() if x != TRANSPLICED_KEY]
+        )
     roc_curves = {}
     max_tpr = 0.0
     for stratum in strata:

@@ -85,5 +85,4 @@ def read_single_peaks_data(df_loc, score_limit, hq_hits_only, filter_ptms):
         LABEL_KEY,
     ]]
 
-
     return peaks_df

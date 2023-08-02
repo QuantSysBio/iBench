@@ -70,10 +70,14 @@ def combine_dataframes(all_search_results, hq_hits_only, config):
         else:
             merged_result_list.append(all_search_results[id_group][0])
     combined_df = pd.concat(merged_result_list)
-    combined_df = combined_df.sort_values(by=ENGINE_SCORE_KEY, ascending=False)
 
     if hq_hits_only:
-        combined_df = combined_df.drop_duplicates(PEPTIDE_KEY)
+        combined_df = combined_df.sort_values(
+            by=ENGINE_SCORE_KEY, ascending=False,
+        )
+
+        if config.drop_duplicates:
+            combined_df = combined_df.drop_duplicates(PEPTIDE_KEY)
         combined_df = combined_df[
             (combined_df['sequenceLength'] >= config.min_seq_len) &
             (combined_df['sequenceLength'] <= config.max_seq_len)

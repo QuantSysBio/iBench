@@ -10,6 +10,7 @@ import numpy as np
 from ibench.check_presence import generate_pairs
 from ibench.constants import (
     CANONICAL_KEY,
+    CHARGE_KEY,
     CISSPLICED_KEY,
     ENDC_TEXT,
     GT_SCAN_KEY,
@@ -20,6 +21,7 @@ from ibench.constants import (
     SOURCE_KEY,
     TRANSPLICED_KEY,
 )
+from ibench.input.invitrospi import read_invitro_spi_dbs
 from ibench.input.mzml import process_mzml_files
 from ibench.input.mgf import process_mgf_files
 from ibench.input.search_results import generic_read_df
@@ -205,6 +207,54 @@ def _get_group(peptide, peptide_groups):
             return idx
     return -1
 
+def invitro_id_strata_filter(target_df, unique_pep_df, strata_fractions, config):
+    """ Function to filter strata sizes for invitro polypeptide identifications.
+
+    Parameters
+    ----------
+    target_df : pd.DataFrame
+        The identifications from original polypeptide digestions.
+    unique_pep_df : pd.DataFrame
+        The unique peptides identified.
+    strata_fraction : dict
+        Dictionary of the fractions of each stratum required.
+    config : ibench.config.Config
+        The config object which controls the experiment.
+
+    Returns
+    -------
+    hq_df : pd.DataFrame
+        The DataFrame of high quality identifications with the required ratios.
+    """
+    strata_ratios = {
+        'canonical': config.discoverable_fraction/strata_fractions['canonical'],
+        'cisspliced': config.cisspliced_fraction/strata_fractions['cisspliced'],
+        'transspliced': config.transspliced_fraction/strata_fractions['transspliced'],
+    }
+    divisor = max(strata_ratios.values())
+
+    strat_dfs = []
+    for stratum, strat_ratio in strata_ratios.items():
+        sample_frac = strat_ratio/divisor
+
+        strat_df = unique_pep_df[unique_pep_df['stratum'] == stratum].reset_index(drop=True)
+        strat_dfs.append(
+            strat_df.sample(
+                frac=sample_frac,
+                random_state=7,
+            )
+        )
+
+    unique_pep_df_all_strata = pd.concat(strat_dfs)
+    hq_df = pd.merge(
+        target_df,
+        unique_pep_df_all_strata[['peptide']],
+        how='inner',
+        on='peptide'
+    )
+
+    return hq_df
+
 def extract_hq_hits(config):
     """ Function to extract the high quality PSMs from the search results provided.
 
@@ -214,25 +264,42 @@ def extract_hq_hits(config):
         The config object which controls the experiment.
     """
     # Read in all search results:
-    target_df = generic_read_df(
-        config,
-        hq_hits_only=True,
-    )
+    if config.invitro_benchmark:
+        target_df = read_invitro_spi_dbs(
+            config,
+        )
+        target_df = target_df.drop(CHARGE_KEY, axis=1)
+    else:
+        target_df = generic_read_df(
+            config,
+            hq_hits_only=True,
+        )
 
     # Create I/L redundant peptides
     target_df[IL_PEPTIDE_KEY] = target_df[PEPTIDE_KEY].apply(
         lambda x : x.replace('I', 'L')
     )
-    target_df = target_df.drop_duplicates(subset=[IL_PEPTIDE_KEY])
+    if config.invitro_benchmark:
+        unique_pep_df = deepcopy(
+            target_df.drop_duplicates(subset=[IL_PEPTIDE_KEY])
+        )
+        strata_counts = unique_pep_df['stratum'].value_counts()
+        strata_fractions = (strata_counts/strata_counts.sum()).to_dict()
+        if config.discoverable_fraction != -1:
+            hq_df = invitro_id_strata_filter(target_df, unique_pep_df, strata_fractions, config)
+        else:
+            hq_df = target_df
+    else:
+        if config.drop_duplicates:
+            target_df = target_df.drop_duplicates(subset=[IL_PEPTIDE_KEY])
+        peptides = target_df[IL_PEPTIDE_KEY].unique().tolist()
 
-    peptides = target_df[IL_PEPTIDE_KEY].tolist()
-    peptide_groups = get_peptide_groups(peptides, config.closeness_cut_off)
-    target_df['peptideGroup'] = target_df[IL_PEPTIDE_KEY].apply(
-        lambda x : _get_group(x, peptide_groups)
-    )
+        peptide_groups = get_peptide_groups(peptides, config.closeness_cut_off)
+        target_df['peptideGroup'] = target_df[IL_PEPTIDE_KEY].apply(
+            lambda x : _get_group(x, peptide_groups)
+        )
+        hq_df = assign_strata(target_df, config)
 
-    hq_df = assign_strata(target_df, config)
-    hq_df = hq_df.reset_index(drop=True)
     scan_files = sorted(hq_df[SOURCE_KEY].unique().tolist())
     if config.single_scan_file:
         hq_df[GT_SOURCE_KEY] = f'ibenchGroundTruth_{config.identifier}'
@@ -240,6 +307,7 @@ def extract_hq_hits(config):
         hq_df[GT_SOURCE_KEY] = hq_df[SOURCE_KEY].apply(
             lambda x : f'ibenchGroundTruth_{config.identifier}_{scan_files.index(x)}'
         )
+    hq_df = hq_df.reset_index(drop=True)
     hq_df[GT_SCAN_KEY] = hq_df.index + 1
 
     if config.scan_format == 'mgf':
@@ -249,10 +317,11 @@ def extract_hq_hits(config):
 
     hq_df = hq_df.sort_values(by=GT_SCAN_KEY)
 
-    hq_df = hq_df.drop(
-        ['peptideGroup', 'groupOrder', 'forceCanonical'],
-        axis=1,
-    )
+    if not config.invitro_benchmark:
+        hq_df = hq_df.drop(
+            ['peptideGroup', 'groupOrder', 'forceCanonical'],
+            axis=1,
+        )
 
     hq_df.to_csv(
         f'{config.output_folder}/high_confidence.csv',
