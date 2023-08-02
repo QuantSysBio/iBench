@@ -45,10 +45,10 @@ You will also require conda to use the iBench software.
 ### Setting up your environment:
 
 
-1) To start with create a new conda environment with python version 3.8:
+1) To start with create a new conda environment with python version 3.9:
 
 ```
-conda create --name ibench python=3.8
+conda create --name ibench python=3.9
 ```
 
 2) Activate this environment
