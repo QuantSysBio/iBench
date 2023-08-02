@@ -60,5 +60,9 @@ def read_single_percolator_data(
         PEPTIDE_KEY,
         LABEL_KEY,
     ]]
+    if perc_df[PEPTIDE_KEY].iloc[0][1] == '.':
+        perc_df[PEPTIDE_KEY] = perc_df[PEPTIDE_KEY].apply(
+            lambda x : x[2:-2]
+        )
 
     return perc_df

@@ -2,6 +2,35 @@
 """
 import re
 
+def find_trans_matched(protein, splice_reactants, proteome):
+    """ Function to check if any two potential splice reactants of a peptide are present in one
+        protein and across the proteome.
+    
+    Parameters
+    ----------
+    protein : str
+        The protein sequence.
+    splice_reactants : list of tuple of str
+        A list of the possible splice reactants for the peptide.
+    proteome : list of str
+        A list of the proteins to be considered
+
+    Returns
+    -------
+    found_trans : bool
+        True if the peptide is present as a transspliced peptide, False otherwise.
+    """
+    for (sr_1, sr_2) in splice_reactants:
+        if sr_1 in protein:
+            for trans_protein in proteome:
+                if sr_2 in trans_protein:
+                    return True
+        if sr_2 in protein:
+            for trans_protein in proteome:
+                if sr_1 in trans_protein:
+                    return True
+
+
 def find_cis_matched_splice_reactants(protein, splice_reactants, max_intervening):
     """ Function to check if any two potential splice reactants of a peptide are present in
         a single protein.

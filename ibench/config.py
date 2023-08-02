@@ -5,10 +5,14 @@ import os
 import yaml
 
 ALL_CONFIG_KEYS = (
+    'allowTrans',
     'benchmarkResults',
     'closenessCutOff',
+    'dropDuplicates',
     'filterPTMs',
     'identifier',
+    'inspireSettings',
+    'inVitroBenchmark',
     'scanFolder',
     'scanFormat',
     'searchResults',
@@ -21,7 +25,9 @@ ALL_CONFIG_KEYS = (
     'qValueCutOffs',
     'canonicalFraction',
     'cissplicedFraction',
+    'resultsFiles',
     'singleScanFile',
+    'spectralAngleCutOff',
     'transsplicedFraction',
     'proteome',
     'ms2Accuracy',
@@ -61,13 +67,15 @@ class Config:
         self.search_results = config_dict.get('searchResults')
         self.output_folder = config_dict.get('outputFolder')
         self.random_seed = config_dict.get('randomSeed', 42)
+        self.results_files = config_dict.get('resultsFiles', None)
+        self.drop_duplicates = config_dict.get('dropDuplicates', True)
         self.q_cuts = config_dict.get('qValueCutOffs')
         self.discoverable_fraction = config_dict['canonicalFraction']
         self.cisspliced_fraction = config_dict.get('cissplicedFraction', 0.0)
         self.filter_ptms = config_dict.get('filterPTMs', True)
         self.transspliced_fraction = config_dict['transsplicedFraction']
         self.input_database = config_dict.get('inputDatabase')
-        self.proteome_loc = config_dict['proteome']
+        self.proteome_loc = config_dict.get('proteome')
         self.min_seq_len = config_dict.get('minSequenceLength', 7)
         self.max_seq_len = config_dict.get('maxSequenceLength', 30)
         self.scan_folder = config_dict.get('scanFolder')
@@ -77,6 +85,14 @@ class Config:
         self.enzyme = config_dict.get('enzyme')
         self.max_intervening = config_dict.get('maxIntervening', 25)
         self.single_scan_file = config_dict.get('singleScanFile', True)
+        self.invitro_benchmark = config_dict.get('inVitroBenchmark', False)
+        self.inspire_settings = config_dict.get('inspireSettings', None)
+        self.spectral_angle_cut_offs = config_dict.get('spectralAngleCutOffs', {
+            'canonical': 0.7,
+            'cisspliced': 0.7,
+            'transspliced': 0.7,
+        })
+        self.allow_trans = config_dict.get('allowTrans', False)
 
         if self.cisspliced_fraction > 0.0:
             self.closeness_cut_off = config_dict.get('closenessCutOff', 3)
@@ -90,7 +106,7 @@ class Config:
         """ Check the values in the config file to ensure they are valid.
         """
         if pipeline == 'createDB':
-            if not os.path.exists(self.proteome_loc):
+            if not self.invitro_benchmark and not os.path.exists(self.proteome_loc):
                 raise ValueError(f'No file at:\n\t{self.proteome_loc}')
         elif pipeline == 'analysis':
             if self.benchmark_results is None:

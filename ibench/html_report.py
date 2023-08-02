@@ -101,7 +101,7 @@ def create_html_report(config, figures):
                     False Discovery Rate Estimation
                 </h3>
                 <p>
-                    This plots the estimated FDR against observed FDR for each method.
+                    This plots the reported FDR against observed FDR for each method.
                 </p>
                 <center>
             ''' + figures['fdr']

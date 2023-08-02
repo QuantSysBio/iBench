@@ -76,6 +76,32 @@ def remove_matches(proteome, peptide_strata, max_intervening, ids_of_interest=No
 
     return proteome, modified_ids
 
+def write_single_in_silico_protein(config):
+    """ Function to write a single protein made up of concatenated polypeptides.
+
+    Parameters
+    ----------
+    config : ibench.config.Config
+        The Config object used to manage the experiment.
+    """
+    combined_prot = ''
+    for results in config.search_results:
+        results_loc = results['resultsLocation']
+        polypep_seqs = [
+            str(x.seq) for x in SeqIO.parse(
+                f'{results_loc}/polypeptides.fasta', 'fasta'
+            )
+        ]
+        for polypep_seq in polypep_seqs:
+            combined_prot += polypep_seq#.replace('I', 'L')
+        with open(
+            f'{config.output_folder}/modified_proteome.fasta',
+            'w',
+            encoding='UTF-8',
+        ) as prot_file:
+            prot_file.write('>modified_invitro_protein\n')
+            prot_file.write(f'{combined_prot}\n')
+
 def modify_db(config):
     """ Function to create the artificial reference database.
 
@@ -84,6 +110,9 @@ def modify_db(config):
     config : ibench.config.Config
         The Config object used to manage the experiment.
     """
+    if config.invitro_benchmark:
+        write_single_in_silico_protein(config)
+        return
     hq_df = pd.read_csv(f'{config.output_folder}/high_confidence.csv')
     peptide_strata = get_pepitde_strata(hq_df)
 
